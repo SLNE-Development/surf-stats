@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<module version="4">
+  <component name="FacetManager">
+    <facet type="jpa" name="JPA">
+      <configuration>
+        <setting name="validation-enabled" value="true" />
+        <setting name="provider-name" value="Hibernate" />
+        <datasource-mapping>
+          <factory-entry name="surf-stats.surf-stats-bukkit.main" value="56d361f3-9a08-4361-a9c3-ebe410fc882f" />
+        </datasource-mapping>
+        <naming-strategy-map />
+      </configuration>
+    </facet>
+    <facet type="minecraft" name="Minecraft">
+      <configuration>
+        <autoDetectTypes>
+          <platformType>PAPER</platformType>
+          <platformType>ADVENTURE</platformType>
+        </autoDetectTypes>
+        <projectReimportVersion>1</projectReimportVersion>
+      </configuration>
+    </facet>
+  </component>
+</module>
