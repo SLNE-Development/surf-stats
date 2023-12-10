@@ -8,22 +8,28 @@ import org.bukkit.event.HandlerList;
 import org.bukkit.event.Listener;
 import org.bukkit.plugin.PluginManager;
 import org.bukkit.plugin.java.JavaPlugin;
+import org.jetbrains.annotations.ApiStatus;
+import org.jetbrains.annotations.Contract;
 
 import java.util.ArrayList;
 import java.util.List;
 
 /**
- * The type Listener manager.
+ * The ListenerManager class is responsible for managing listeners and registering them with the plugin manager.
+ * It provides methods for enabling and disabling the listeners, accessing the list of registered listeners,
+ * and retrieving the plugin manager and java plugin associated with the listener manager.
  */
-public class ListenerManager {
+@ApiStatus.Internal
+public final class ListenerManager {
 
 	private final List<Listener> listeners;
 	private PluginManager pluginManager;
 	private JavaPlugin plugin;
 
 	/**
-	 * Instantiates a new Listener manager.
+	 * The ListenerManager class is responsible for managing listeners and registering them with the plugin manager.
 	 */
+	@Contract(pure = true)
 	public ListenerManager() {
 		this.listeners = new ArrayList<>();
 	}
@@ -49,35 +55,38 @@ public class ListenerManager {
 	}
 
 	/**
-	 * On disable.
+	 * Unregisters all listeners associated with the plugin.
 	 */
 	public void onDisable() {
-		listeners.forEach(HandlerList::unregisterAll);
+		HandlerList.unregisterAll(plugin);
 	}
 
 	/**
-	 * Listeners list.
+	 * Returns the list of registered listeners.
 	 *
-	 * @return the list
+	 * @return The list of registered listeners.
 	 */
+	@Contract(pure = true)
 	public List<Listener> listeners() {
 		return listeners;
 	}
 
 	/**
-	 * Plugin manager plugin manager.
+	 * Retrieves the PluginManager associated with the ListenerManager.
 	 *
-	 * @return the plugin manager
+	 * @return The PluginManager instance associated with the ListenerManager.
 	 */
+	@Contract(pure = true)
 	public PluginManager pluginManager() {
 		return pluginManager;
 	}
 
 	/**
-	 * Plugin java plugin.
+	 * Returns the JavaPlugin instance associated with the ListenerManager.
 	 *
-	 * @return the java plugin
+	 * @return The JavaPlugin instance.
 	 */
+	@Contract(pure = true)
 	public JavaPlugin plugin() {
 		return plugin;
 	}

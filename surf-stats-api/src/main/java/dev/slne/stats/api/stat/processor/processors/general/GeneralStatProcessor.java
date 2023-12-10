@@ -4,34 +4,34 @@ import dev.slne.stats.api.StatsApi;
 import dev.slne.stats.api.player.StatPlayer;
 import dev.slne.stats.api.stat.GeneralStat;
 import dev.slne.stats.api.stat.processor.StatProcessor;
+import org.jetbrains.annotations.NotNull;
 
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 
 /**
- * The type General stat processor.
+ * The GeneralStatProcessor class is responsible for processing general statistics for a player.
+ * It extends the abstract class StatProcessor with GeneralStat as the generic type.
  */
-public class GeneralStatProcessor extends StatProcessor<GeneralStat> {
+public final class GeneralStatProcessor extends StatProcessor<GeneralStat> {
 
 	@Override
-	public List<GeneralStat> processStats(StatPlayer player, Map<String, Long> statMap) {
-		List<GeneralStat> stats = new ArrayList<>();
+	public @NotNull List<GeneralStat> processStats(StatPlayer player, @NotNull Map<String, Long> statMap) {
+		List<GeneralStat> stats = new ArrayList<>(statMap.size());
 
-		statMap.forEach((statName, statValue) -> {
-			player.getGeneralStat(statName).ifPresentOrElse(
-				stat -> {
-					putIfLarger(stat.statValue(), statValue, stat::statValue);
-					stats.add(stat);
-				},
-				() -> {
-					GeneralStat generalStat = new GeneralStat(player.uuid(), StatsApi.getServer(), statName, statValue);
+		statMap.forEach((statName, statValue) -> player.getGeneralStat(statName).ifPresentOrElse(
+			stat -> {
+				putIfLarger(stat.statValue(), statValue, stat::statValue);
+				stats.add(stat);
+			},
+			() -> {
+				GeneralStat generalStat = new GeneralStat(player.uuid(), StatsApi.getServer(), statName, statValue);
 
-					stats.add(generalStat);
-					player.addGeneralStat(generalStat);
-				}
-			);
-		});
+				stats.add(generalStat);
+				player.addGeneralStat(generalStat);
+			}
+		));
 
 		return stats;
 	}

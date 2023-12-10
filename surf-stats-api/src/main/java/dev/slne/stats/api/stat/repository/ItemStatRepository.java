@@ -1,6 +1,7 @@
 package dev.slne.stats.api.stat.repository;
 
 import dev.slne.stats.api.stat.ItemStat;
+import org.jetbrains.annotations.ApiStatus;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.lang.NonNull;
 import org.springframework.scheduling.annotation.Async;
@@ -11,18 +12,19 @@ import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
 
 /**
- * The interface Item stat repository.
+ * Repository interface for ItemStat entities.
+ * This interface provides methods to interact with the database for ItemStat entities.
  */
+@ApiStatus.NonExtendable
 @Repository
 public interface ItemStatRepository extends JpaRepository<ItemStat, Long> {
 
 	/**
-	 * Find by stat owner completable future.
+	 * Finds the ItemStat entities based on the stat owner and server.
 	 *
-	 * @param statOwner the stat owner
-	 * @param server    the server
-	 *
-	 * @return the completable future
+	 * @param statOwner The UUID of the stat owner.
+	 * @param server    The server.
+	 * @return A CompletableFuture that returns a List of ItemStat objects that match the stat owner and server.
 	 */
 	@Async
 	CompletableFuture<List<ItemStat>> findByStatOwnerAndServer(@NonNull UUID statOwner, @NonNull String server);

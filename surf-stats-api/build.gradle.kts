@@ -4,4 +4,5 @@ plugins {
 
 dependencies {
 	compileOnlyApi(libs.surf.data.api)
+	compileOnlyApi(libs.fast.util)
 }

@@ -1,6 +1,7 @@
 package dev.slne.stats.api.stat.repository;
 
 import dev.slne.stats.api.stat.MobStat;
+import org.jetbrains.annotations.ApiStatus;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.lang.NonNull;
 import org.springframework.scheduling.annotation.Async;
@@ -11,18 +12,20 @@ import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
 
 /**
- * The interface Mob stat repository.
+ * The MobStatRepository interface extends the JpaRepository interface and provides
+ * methods for retrieving and manipulating MobStat objects in the database.
  */
+@ApiStatus.NonExtendable
 @Repository
 public interface MobStatRepository extends JpaRepository<MobStat, Long> {
 
 	/**
-	 * Find by stat owner completable future.
+	 * Retrieves a list of MobStat objects based on the provided stat owner and server.
 	 *
-	 * @param statOwner the stat owner
-	 * @param server    the server
-	 *
-	 * @return the completable future
+	 * @param statOwner The UUID of the stat owner.
+	 * @param server The name of the server.
+	 * @return A CompletableFuture that completes with a List of MobStat objects representing
+	 *         the retrieved MobStats.
 	 */
 	@Async
 	CompletableFuture<List<MobStat>> findByStatOwnerAndServer(@NonNull UUID statOwner, @NonNull String server);

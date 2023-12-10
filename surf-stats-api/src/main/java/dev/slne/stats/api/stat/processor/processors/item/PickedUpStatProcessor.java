@@ -4,32 +4,35 @@ import dev.slne.stats.api.StatsApi;
 import dev.slne.stats.api.player.StatPlayer;
 import dev.slne.stats.api.stat.ItemStat;
 import dev.slne.stats.api.stat.processor.StatProcessor;
+import org.jetbrains.annotations.NotNull;
 
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 
-public class PickedUpStatProcessor extends StatProcessor<ItemStat> {
+/**
+ * The PickedUpStatProcessor class is a concrete implementation of the StatProcessor class.
+ * It processes the picked-up item statistics for a player and updates the corresponding item stat objects.
+ */
+public final class PickedUpStatProcessor extends StatProcessor<ItemStat> {
 
 	@Override
-	public List<ItemStat> processStats(StatPlayer player, Map<String, Long> statMap) {
-		List<ItemStat> stats = new ArrayList<>();
+	public @NotNull List<ItemStat> processStats(StatPlayer player, @NotNull Map<String, Long> statMap) {
+		List<ItemStat> stats = new ArrayList<>(statMap.size());
 
-		statMap.forEach((statName, statValue) -> {
-			player.getItemStat(statName).ifPresentOrElse(
-				stat -> {
-					putIfLarger(stat.timesPickedUp(), statValue, stat::timesPickedUp);
-					stats.add(stat);
-				},
-				() -> {
-					ItemStat itemStat =
-						new ItemStat(player.uuid(), StatsApi.getServer(), statName, 0L, 0L, 0L, 0L, statValue, 0L);
+		statMap.forEach((statName, statValue) -> player.getItemStat(statName).ifPresentOrElse(
+            stat -> {
+                putIfLarger(stat.timesPickedUp(), statValue, stat::timesPickedUp);
+                stats.add(stat);
+            },
+            () -> {
+                ItemStat itemStat = ItemStat.empty(player.uuid(), StatsApi.getServer(), statName)
+						.timesPickedUp(statValue);
 
-					stats.add(itemStat);
-					player.addItemStat(itemStat);
-				}
-			);
-		});
+                stats.add(itemStat);
+                player.addItemStat(itemStat);
+            }
+        ));
 
 		return stats;
 	}

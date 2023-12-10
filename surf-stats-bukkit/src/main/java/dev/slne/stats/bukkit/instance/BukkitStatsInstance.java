@@ -8,20 +8,24 @@ import net.kyori.adventure.text.Component;
 import org.bukkit.Bukkit;
 import org.bukkit.entity.Player;
 import org.bukkit.scheduler.BukkitRunnable;
+import org.jetbrains.annotations.ApiStatus;
+import org.jetbrains.annotations.NotNull;
 
 import java.io.File;
 
 /**
- * The type Bukkit stats instance.
+ * The class BukkitStatsInstance is a subclass of CoreStatsInstance and represents
+ * a statistics instance for a Bukkit server implementation.
  */
-public class BukkitStatsInstance extends CoreStatsInstance {
+@ApiStatus.Internal
+public final class BukkitStatsInstance extends CoreStatsInstance {
 
 	private ListenerManager listenerManager;
 
 	/**
-	 * Instantiates a new Bukkit stats instance.
+	 * Constructs a new instance of the BukkitStatsInstance class with the provided class loader.
 	 *
-	 * @param classLoader the class loader
+	 * @param classLoader the class loader to be used with the BukkitStatsInstance
 	 */
 	public BukkitStatsInstance(ClassLoader classLoader) {
 		super(classLoader);
@@ -50,7 +54,7 @@ public class BukkitStatsInstance extends CoreStatsInstance {
 	}
 
 	@Override
-	public void disconnectPlayer(StatPlayer statPlayer, Component reason) {
+	public void disconnectPlayer(@NotNull StatPlayer statPlayer, Component reason) {
 		Player player = Bukkit.getPlayer(statPlayer.uuid());
 
 		new BukkitRunnable() {

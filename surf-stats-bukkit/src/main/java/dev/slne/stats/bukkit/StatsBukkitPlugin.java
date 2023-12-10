@@ -3,30 +3,27 @@ package dev.slne.stats.bukkit;
 import dev.slne.stats.api.StatsApi;
 import dev.slne.stats.bukkit.instance.BukkitStatsInstance;
 import org.bukkit.plugin.java.JavaPlugin;
+import org.jetbrains.annotations.NotNull;
 
 /**
- * The type Stats bukkit plugin.
+ * The StatsBukkitPlugin class is a Bukkit plugin class that integrates the Stats API into a Bukkit server.
  */
 public class StatsBukkitPlugin extends JavaPlugin {
-
-	private static StatsBukkitPlugin instance;
 
 	private StatsApi statsApi;
 	private BukkitStatsInstance statsInstance;
 
 	/**
-	 * Gets instance.
+	 * Retrieves the singleton instance of StatsBukkitPlugin.
 	 *
-	 * @return the instance
+	 * @return The singleton instance of StatsBukkitPlugin.
 	 */
-	public static StatsBukkitPlugin getInstance() {
-		return instance;
+	public static @NotNull StatsBukkitPlugin getInstance() {
+		return getPlugin(StatsBukkitPlugin.class);
 	}
 
 	@Override
 	public void onLoad() {
-		instance = this;
-
 		statsInstance = new BukkitStatsInstance(getClassLoader());
 		statsApi = new StatsApi(statsInstance);
 
@@ -45,18 +42,18 @@ public class StatsBukkitPlugin extends JavaPlugin {
 	}
 
 	/**
-	 * Stats api stats api.
+	 * Retrieves the StatsApi instance, which provides access to statistics and server information.
 	 *
-	 * @return the stats api
+	 * @return The StatsApi instance.
 	 */
 	public StatsApi statsApi() {
 		return statsApi;
 	}
 
 	/**
-	 * Stats instance bukkit stats instance.
+	 * Retrieves the StatsBukkitPlugin's statsInstance.
 	 *
-	 * @return the bukkit stats instance
+	 * @return The statsInstance of the StatsBukkitPlugin.
 	 */
 	public BukkitStatsInstance statsInstance() {
 		return statsInstance;

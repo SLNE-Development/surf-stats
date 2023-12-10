@@ -7,6 +7,8 @@ import com.google.gson.annotations.SerializedName;
 import com.google.gson.stream.JsonReader;
 import dev.slne.stats.api.StatsApi;
 import org.apache.commons.lang3.builder.ToStringBuilder;
+import org.jetbrains.annotations.Contract;
+import org.jetbrains.annotations.NotNull;
 
 import java.io.File;
 import java.io.FileNotFoundException;
@@ -17,7 +19,7 @@ import java.util.Map;
 import java.util.UUID;
 
 /**
- * The type Player stat file.
+ * The PlayerStatFile class represents a player's statistics file.
  */
 public class PlayerStatFile {
 
@@ -79,110 +81,112 @@ public class PlayerStatFile {
 	}
 
 	/**
-	 * Uuid uuid.
+	 * Retrieves the UUID associated with the player stat file.
 	 *
-	 * @return the uuid
+	 * @return the UUID associated with the player stat file
 	 */
 	public UUID uuid() {
 		return uuid;
 	}
 
 	/**
-	 * Data version string.
+	 * Retrieves the data version of the player stat file.
 	 *
-	 * @return the string
+	 * @return the data version of the player stat file
 	 */
 	public String dataVersion() {
 		return dataVersion;
 	}
 
 	/**
-	 * Custom map.
+	 * Returns the custom map from the PlayerStatFile object.
 	 *
-	 * @return the map
+	 * @return the custom map from the PlayerStatFile object
 	 */
 	public Map<String, Long> custom() {
 		return custom;
 	}
 
 	/**
-	 * Used map.
+	 * Retrieves a map of the "used" statistics from the player's stat file.
 	 *
-	 * @return the map
+	 * @return a map containing the "used" statistics, where the keys are the names of the items
+	 * and the values are the corresponding usage counts
 	 */
 	public Map<String, Long> used() {
 		return used;
 	}
 
 	/**
-	 * Dropped map.
+	 * Returns a map of items dropped by the player.
 	 *
-	 * @return the map
+	 * @return a map of items dropped
 	 */
 	public Map<String, Long> dropped() {
 		return dropped;
 	}
 
 	/**
-	 * Crafted map.
+	 * Retrieves the crafted statistics for a player.
 	 *
-	 * @return the map
+	 * @return a Map containing the name of each crafted item and the number of times it has been crafted,
+	 * or an empty Map if no items have been crafted
 	 */
 	public Map<String, Long> crafted() {
 		return crafted;
 	}
 
 	/**
-	 * Mined map.
+	 * Retrieves the map of mined items for the player.
 	 *
-	 * @return the map
+	 * @return the map representing the mined items, where the keys are the item names and the values are the quantities mined
 	 */
 	public Map<String, Long> mined() {
 		return mined;
 	}
 
 	/**
-	 * Picked up map.
+	 * Retrieves the map of items picked up by the player.
 	 *
-	 * @return the map
+	 * @return a map containing the item names as keys and the number of times they were picked up as values
 	 */
 	public Map<String, Long> pickedUp() {
 		return pickedUp;
 	}
 
 	/**
-	 * Broken map.
+	 * Retrieves the map of broken statistics.
 	 *
-	 * @return the map
+	 * @return the map of broken statistics
 	 */
 	public Map<String, Long> broken() {
 		return broken;
 	}
 
 	/**
-	 * Killed map.
+	 * This method returns the "killed" map from the PlayerStatFile class.
+	 * The "killed" map contains the statistics of the player's kills.
 	 *
-	 * @return the map
+	 * @return the "killed" map which is a mapping of mob names to the number of times the player has killed them
 	 */
 	public Map<String, Long> killed() {
 		return killed;
 	}
 
 	/**
-	 * Killed by map.
+	 * Returns the map of players that killed the current player along with the number of times they killed them.
 	 *
-	 * @return the map
+	 * @return the map of players that killed the current player along with the number of times they killed them
 	 */
 	public Map<String, Long> killedBy() {
 		return killedBy;
 	}
 
 	/**
-	 * Uuid player stat file.
+	 * Sets the UUID of the PlayerStatFile.
 	 *
-	 * @param uuid the uuid
-	 *
-	 * @return the player stat file
+	 * @param uuid the UUID to set
+	 * @return the updated PlayerStatFile object
 	 */
 	public PlayerStatFile uuid(UUID uuid) {
 		this.uuid = uuid;
@@ -190,11 +194,10 @@ public class PlayerStatFile {
 	}
 
 	/**
-	 * Data version player stat file.
+	 * Sets the data version of the PlayerStatFile.
 	 *
-	 * @param dataVersion the data version
-	 *
-	 * @return the player stat file
+	 * @param dataVersion the data version to set
+	 * @return the updated PlayerStatFile object
 	 */
 	public PlayerStatFile dataVersion(String dataVersion) {
 		this.dataVersion = dataVersion;
@@ -220,43 +223,42 @@ public class PlayerStatFile {
 	}
 
 	/**
-	 * The type Reader.
+	 * The Reader class is responsible for reading player stat files.
 	 */
 	public static class Reader {
 		private final Gson gson;
 
 		/**
-		 * Instantiates a new Reader.
+		 * The Reader class is responsible for reading player stat files.
 		 *
-		 * @param gson the gson
+		 * @param gson the Gson object used to read the player stat files
 		 */
+		@Contract(pure = true)
 		public Reader(Gson gson) {
 			this.gson = gson;
 		}
 
 		/**
-		 * Read player stat file.
+		 * Reads a player's statistics file.
 		 *
-		 * @param uuid the uuid
-		 *
-		 * @return the player stat file
-		 *
-		 * @throws FileNotFoundException the file not found exception
+		 * @param uuid the UUID of the player whose statistics file needs to be read
+		 * @return the PlayerStatFile object representing the player's statistics file
+		 * @throws FileNotFoundException if the statistics file for the player with the specified UUID cannot be found
 		 */
-		public PlayerStatFile read(UUID uuid) throws FileNotFoundException {
-			File playerFile = new File(StatsApi.getInstance().getStatFolder(), uuid.toString() + ".json");
+		public PlayerStatFile read(@NotNull UUID uuid) throws FileNotFoundException {
+			File playerFile = new File(StatsApi.getInstance().getStatFolder(), uuid + ".json");
 			JsonObject playerStatFile = gson.fromJson(new JsonReader(new FileReader(playerFile)), JsonObject.class);
 
 			return gson.fromJson(playerStatFile.getAsJsonObject("stats"), PlayerStatFile.class)
-				.dataVersion(playerStatFile.get("DataVersion").getAsString()).uuid(uuid);
+				.dataVersion(playerStatFile.get("DataVersion").getAsString())
+				.uuid(uuid);
 		}
-		
+
 		/**
-		 * Read player stat file.
+		 * Reads a player stat file from the provided JSON string.
 		 *
-		 * @param json the json
-		 *
-		 * @return the player stat file
+		 * @param json the JSON string representing the player stat file
+		 * @return the PlayerStatFile object parsed from the JSON string
 		 */
 		public PlayerStatFile read(String json) {
 			JsonObject playerStatFile = gson.fromJson(json, JsonObject.class);

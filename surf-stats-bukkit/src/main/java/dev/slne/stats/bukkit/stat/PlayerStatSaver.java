@@ -1,15 +1,20 @@
 package dev.slne.stats.bukkit.stat;
 
+import net.kyori.adventure.text.logger.slf4j.ComponentLogger;
 import org.bukkit.Bukkit;
 import org.bukkit.entity.Player;
+import org.jetbrains.annotations.ApiStatus;
+import org.jetbrains.annotations.Contract;
+import org.jetbrains.annotations.NotNull;
 
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 
 /**
- * The type Player stat saver.
+ * The PlayerStatSaver class provides methods to save and retrieve player statistics.
  */
-public class PlayerStatSaver {
+@ApiStatus.Internal
+public final class PlayerStatSaver {
 
 	private static final String CB_PACKAGE = Bukkit.getServer().getClass().getPackage().getName();
 
@@ -34,16 +39,17 @@ public class PlayerStatSaver {
 			TO_JSON_METHOD = SERVER_STATS_COUNTER_CLASS.getDeclaredMethod("b");
 			TO_JSON_METHOD.setAccessible(true);
 		} catch (ClassNotFoundException | NoSuchMethodException exception) {
+			ComponentLogger.logger().error("Failed to initialize PlayerStatSaver", exception);
 			throw new RuntimeException(exception);
 		}
 	}
 
 	/**
-	 * Gets player stats json.
+	 * Returns the JSON representation of a player's statistics.
 	 *
-	 * @param player the player
-	 *
-	 * @return the player stats json
+	 * @param player The player for which to retrieve the statistics.
+	 * @return The JSON representation of the player's statistics.
+	 * @throws RuntimeException if an error occurs while retrieving the statistics.
 	 */
 	public static String getPlayerStatsJson(Player player) {
 		try {
@@ -58,9 +64,10 @@ public class PlayerStatSaver {
 	}
 
 	/**
-	 * Save stats.
+	 * Saves the statistics of a player to a file.
 	 *
-	 * @param player the player
+	 * @param player The player whose statistics need to be saved.
+	 * @throws RuntimeException If an error occurs while saving the statistics.
 	 */
 	public static void saveStatsToFile(Player player) {
 		try {
@@ -75,13 +82,13 @@ public class PlayerStatSaver {
 	}
 
 	/**
-	 * Cb class string.
+	 * Concatenates the given class name with the CB_PACKAGE constant to form a fully qualified class name.
 	 *
-	 * @param clazz the clazz
-	 *
-	 * @return the string
+	 * @param clazz the class name to concatenate with CB_PACKAGE
+	 * @return the fully qualified class name formed by concatenating CB_PACKAGE and clazz
 	 */
-	private static String cbClass(String clazz) {
+	@Contract(pure = true)
+	private static @NotNull String cbClass(String clazz) {
 		return CB_PACKAGE + "." + clazz;
 	}
 

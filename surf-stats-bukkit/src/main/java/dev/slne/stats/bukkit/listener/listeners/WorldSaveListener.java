@@ -9,19 +9,23 @@ import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
 import org.bukkit.event.world.WorldSaveEvent;
+import org.jetbrains.annotations.ApiStatus;
 
 import java.io.FileNotFoundException;
 import java.util.UUID;
 
 /**
- * The type World save listener.
+ * The WorldSaveListener class is responsible for handling world save events.
+ * It listens for the WorldSaveEvent and performs necessary operations when the primary world is saved.
  */
-public class WorldSaveListener implements Listener {
+@ApiStatus.Internal
+public final class WorldSaveListener implements Listener {
 
 	/**
-	 * On world save.
+	 * Called when the primary world is saved.
+	 * Performs necessary operations on player statistics files.
 	 *
-	 * @param event the event
+	 * @param event The WorldSaveEvent representing the save event.
 	 */
 	@EventHandler
 	public void onWorldSave(WorldSaveEvent event) {

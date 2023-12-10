@@ -5,88 +5,109 @@ import dev.slne.stats.api.player.StatPlayerManager;
 import dev.slne.stats.api.stat.file.PlayerStatFile;
 import dev.slne.stats.api.stat.processor.processors.StatProcessors;
 import net.kyori.adventure.text.Component;
+import org.jetbrains.annotations.ApiStatus;
 import org.springframework.context.ConfigurableApplicationContext;
 
 import java.io.File;
 import java.util.UUID;
 
 /**
- * The interface Stats instance.
+ * The StatsInstance interface represents a statistics instance in the application.
+ * A statistics instance manages various statistics related operations and provides access to different components.
  */
+@ApiStatus.NonExtendable
 public interface StatsInstance {
 
 	/**
-	 * Gets application context.
+	 * Retrieves the application context of the StatsInstance.
 	 *
-	 * @return the application context
+	 * @return the ConfigurableApplicationContext of the StatsInstance
 	 */
 	ConfigurableApplicationContext getApplicationContext();
 
 	/**
-	 * On load.
+	 * Executes the onLoad process for the StatsInstance.
+	 * This method is called when the StatsInstance is being loaded.
+	 * It initializes necessary components and sets up the environment for the instance.
+	 * Subclasses of StatsInstance can override this method to perform custom onLoad operations.
 	 */
+	@ApiStatus.Internal
 	void onLoad();
 
 	/**
-	 * On enable.
+	 * Executes the onEnable process for the implementing class.
+	 * This method is called when the implementing class is being enabled.
+	 * It may initialize necessary components and setup the environment for the instance.
+	 * Subclasses of the implementing class can override this method to perform custom onEnable operations.
+	 *
+	 * @see StatsInstance#onLoad()
+	 * @see StatsInstance#onDisable()
 	 */
+	@ApiStatus.Internal
 	void onEnable();
 
 	/**
-	 * On disable.
+	 * Executes the onDisable process for the implementing class.
+	 * This method is called when the implementing class is being disabled.
+	 * It may clean up resources and perform any necessary cleanup operations.
+	 * Subclasses of the implementing class can override this method to perform custom onDisable operations.
+	 *
+	 * @see StatsInstance#onEnable()
 	 */
+	@ApiStatus.Internal
 	void onDisable();
 
 	/**
-	 * Gets stat player.
+	 * Retrieves the StatPlayer associated with the given UUID.
 	 *
-	 * @param uuid the uuid
-	 *
-	 * @return the stat player
+	 * @param uuid the UUID of the StatPlayer to retrieve
+	 * @return the StatPlayer associated with the given UUID, or null if not found
 	 */
 	StatPlayer getStatPlayer(UUID uuid);
 
 	/**
-	 * Gets stat player manager.
+	 * Retrieves the StatPlayerManager instance.
 	 *
-	 * @return the stat player manager
+	 * @return the StatPlayerManager instance
 	 */
 	StatPlayerManager getStatPlayerManager();
 
 	/**
-	 * Gets player stat file reader.
+	 * Retrieves the reader for the player stat file.
 	 *
-	 * @return the player stat file reader
+	 * @return the reader for the player stat file
 	 */
 	PlayerStatFile.Reader getPlayerStatFileReader();
 
 	/**
-	 * Gets stat folder.
+	 * Retrieves the folder where player statistics are stored.
 	 *
-	 * @return the stat folder
+	 * @return the folder where player statistics are stored
 	 */
 	File getStatFolder();
 
 	/**
-	 * Sets stat folder.
+	 * Sets the folder where player statistics are stored.
 	 *
-	 * @param statFolder the stat folder
+	 * @param statFolder the folder where player statistics are stored
 	 */
+	@ApiStatus.Internal
 	void setStatFolder(File statFolder);
 
 	/**
-	 * Gets stat processor.
+	 * Retrieves the StatProcessors instance.
 	 *
-	 * @return the stat processor
+	 * @return the StatProcessors instance
 	 */
 	StatProcessors getStatProcessor();
 	
 	/**
-	 * Disconnect player.
+	 * Disconnects the specified player with the given reason.
 	 *
-	 * @param statPlayer the stat player
-	 * @param reason     the reason
+	 * @param statPlayer The StatPlayer to disconnect.
+	 * @param reason     The reason for the disconnection.
 	 */
+	@ApiStatus.Internal
 	void disconnectPlayer(StatPlayer statPlayer, Component reason);
 
 }

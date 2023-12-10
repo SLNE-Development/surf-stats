@@ -12,11 +12,14 @@ import dev.slne.stats.api.stat.processor.processors.item.PickedUpStatProcessor;
 import dev.slne.stats.api.stat.processor.processors.item.UsedStatProcessor;
 import dev.slne.stats.api.stat.processor.processors.mob.KilledByStatProcessor;
 import dev.slne.stats.api.stat.processor.processors.mob.KilledStatProcessor;
+import org.jetbrains.annotations.ApiStatus;
+import org.jetbrains.annotations.NotNull;
 
 /**
- * The type Stat processors.
+ * The StatProcessors class handles the processing of various player statistics.
+ * It contains different processors for different types of stats, such as General, Item, and Mob statistics.
  */
-public class StatProcessors {
+public final class StatProcessors {
 
 	// General
 	private final GeneralStatProcessor generalStatProcessor;
@@ -34,8 +37,10 @@ public class StatProcessors {
 	private final KilledByStatProcessor killedByStatProcessor;
 
 	/**
-	 * Instantiates a new Stat processors.
+	 * The StatProcessors class handles the processing of various player statistics.
+	 * It contains different processors for different types of stats, such as General, Item, and Mob statistics.
 	 */
+	@ApiStatus.Internal
 	public StatProcessors() {
 		// General
 		generalStatProcessor = new GeneralStatProcessor();
@@ -54,12 +59,13 @@ public class StatProcessors {
 	}
 
 	/**
-	 * Process stats.
+	 * Processes the statistics for a given player.
 	 *
-	 * @param statPlayer the stat player
-	 * @param statFile   the stat file
+	 * @param statPlayer the player for which the statistics are processed
+	 * @param statFile the player's stat file
 	 */
-	public void processStats(StatPlayer statPlayer, PlayerStatFile statFile) {
+	@ApiStatus.Internal
+	public void processStats(StatPlayer statPlayer, @NotNull PlayerStatFile statFile) {
 		// General
 		generalStatProcessor.processStats(statPlayer, statFile.custom());
 
@@ -77,11 +83,12 @@ public class StatProcessors {
 	}
 
 	/**
-	 * Process stats.
+	 * Processes the statistics for a given player.
 	 *
-	 * @param statPlayer the stat player
-	 * @param statsJson  the stats json
+	 * @param statPlayer the player for which the statistics are processed
+	 * @param statsJson the JSON string containing the player's stat file
 	 */
+	@ApiStatus.Internal
 	public void processStats(StatPlayer statPlayer, String statsJson) {
 		PlayerStatFile.Reader reader = StatsApi.getInstance().getPlayerStatFileReader();
 		PlayerStatFile statFile = reader.read(statsJson);

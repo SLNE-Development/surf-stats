@@ -8,16 +8,19 @@ import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
 import org.bukkit.event.player.PlayerJoinEvent;
 import org.bukkit.event.player.PlayerQuitEvent;
+import org.jetbrains.annotations.ApiStatus;
 
 /**
- * The type Stat player listener.
+ * The StatPlayerListener class is responsible for handling events related to player stats.
  */
-public class StatPlayerListener implements Listener {
+@ApiStatus.Internal
+public final class StatPlayerListener implements Listener {
 
 	/**
-	 * On player join.
+	 * This method is an event handler for the PlayerJoinEvent.
+	 * It is responsible for loading the stats for a player when they join the server.
 	 *
-	 * @param event the event
+	 * @param event The PlayerJoinEvent object
 	 */
 	@EventHandler
 	public void onPlayerJoin(PlayerJoinEvent event) {
@@ -30,9 +33,9 @@ public class StatPlayerListener implements Listener {
 	}
 
 	/**
-	 * On player quit.
+	 * Handles the event when a player quits the server.
 	 *
-	 * @param event the event
+	 * @param event The PlayerQuitEvent triggered when a player quits.
 	 */
 	@EventHandler
 	public void onPlayerQuit(PlayerQuitEvent event) {

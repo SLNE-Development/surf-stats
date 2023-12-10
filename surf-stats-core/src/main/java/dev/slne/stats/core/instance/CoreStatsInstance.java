@@ -8,14 +8,18 @@ import dev.slne.stats.api.stat.file.PlayerStatFile;
 import dev.slne.stats.api.stat.processor.processors.StatProcessors;
 import dev.slne.stats.core.player.CoreStatPlayerManager;
 import dev.slne.stats.core.spring.StatsSpringApplication;
+import org.jetbrains.annotations.ApiStatus;
+import org.jetbrains.annotations.Contract;
 import org.springframework.context.ConfigurableApplicationContext;
 
 import java.io.File;
 import java.util.UUID;
 
 /**
- * The type Core stats instance.
+ * The CoreStatsInstance class is an abstract class that implements the StatsInstance interface.
+ * It provides the core functionality and common methods for managing statistics in an application.
  */
+@ApiStatus.Internal
 public abstract class CoreStatsInstance implements StatsInstance {
 
 	private final ClassLoader classLoader;
@@ -28,10 +32,11 @@ public abstract class CoreStatsInstance implements StatsInstance {
 	private PlayerStatFile.Reader playerStatFileReader;
 
 	/**
-	 * Instantiates a new Core stats instance.
+	 * Constructs a new CoreStatsInstance with the provided class loader.
 	 *
-	 * @param classLoader the class loader
+	 * @param classLoader the class loader to be used with the CoreStatsInstance
 	 */
+	@Contract(pure = true)
 	public CoreStatsInstance(ClassLoader classLoader) {
 		this.classLoader = classLoader;
 	}
@@ -47,12 +52,10 @@ public abstract class CoreStatsInstance implements StatsInstance {
 
 	@Override
 	public void onEnable() {
-
 	}
 
 	@Override
 	public void onDisable() {
-
 	}
 
 	@Override

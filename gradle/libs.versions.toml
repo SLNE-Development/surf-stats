@@ -4,12 +4,14 @@
 minecraft-server-version = "1.20.2"
 surf-data-api-version = "5.0.1-SNAPSHOT"
 paper-api-version = "1.20.2-R0.1-SNAPSHOT"
+fast-util-version = "8.5.9"
 maven-settings-plugin-version = "0.5"
 shadow-plugin-version = "8.1.1"
 
 [libraries]
 surf-data-api = { module = "dev.slne:surf-data-api", version.ref = "surf-data-api-version" }
 paper-api = { module = "io.papermc.paper:paper-api", version.ref = "paper-api-version" }
+fast-util = { module = "it.unimi.dsi:fastutil", version.ref = "fast-util-version" }
 maven-settings-plugin = { module = "net.linguica.gradle:maven-settings-plugin", version.ref = "maven-settings-plugin-version" }
 shadow-plugin = { module = "com.github.johnrengelman:shadow", version.ref = "shadow-plugin-version" }
 

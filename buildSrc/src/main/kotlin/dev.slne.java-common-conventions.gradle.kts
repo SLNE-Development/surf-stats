@@ -1,5 +1,3 @@
-import gradle.kotlin.dsl.accessors._d803cb14c6fe14adae2bba009cf4d623.java
-
 plugins {
 	// Apply the java Plugin to add support for Java.
 	java
@@ -25,5 +23,17 @@ dependencies {
 java {
 	toolchain {
 		languageVersion.set(JavaLanguageVersion.of(17))
+	}
+	withSourcesJar()
+	withJavadocJar()
+}
+
+tasks {
+	compileJava {
+		options.encoding = Charsets.UTF_8.name()
+		options.compilerArgs.add("-parameters")
+	}
+	javadoc {
+		options.encoding = Charsets.UTF_8.name()
 	}
 }
