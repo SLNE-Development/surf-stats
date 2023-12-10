@@ -3,5 +3,5 @@ plugins {
 }
 
 dependencies {
-	compileOnlyApi("dev.slne:surf-data-api:5.0.1-SNAPSHOT")
+	compileOnlyApi(libs.surf.data.api)
 }

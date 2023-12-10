@@ -1,3 +1,5 @@
+import gradle.kotlin.dsl.accessors._d803cb14c6fe14adae2bba009cf4d623.java
+
 plugins {
 	// Apply the java Plugin to add support for Java.
 	java
@@ -11,15 +13,12 @@ repositories {
 	gradlePluginPortal()
 
 	maven("https://repo.papermc.io/repository/maven-public/")
-
-	maven {
+	maven("https://packages.slne.dev/maven/p/surf/maven") {
 		name = "space-maven"
-		url = uri("https://packages.slne.dev/maven/p/surf/maven")
 	}
 }
 
 dependencies {
-
 }
 
 // Apply a specific Java toolchain to ease working on different environments.
