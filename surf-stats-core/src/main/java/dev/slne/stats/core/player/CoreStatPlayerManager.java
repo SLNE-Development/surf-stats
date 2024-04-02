@@ -28,7 +28,8 @@ public final class CoreStatPlayerManager implements StatPlayerManager {
 	 * It provides methods to manage a collection of StatPlayer objects.
 	 */
 	public CoreStatPlayerManager() {
-		this.statPlayers = Object2ObjectMaps.synchronize(new Object2ObjectOpenHashMap<>()); // Instead, a cool fastutil map
+		this.statPlayers =
+			Object2ObjectMaps.synchronize(new Object2ObjectOpenHashMap<>()); // Instead, a cool fastutil map
 	}
 
 	@Contract(pure = true)
@@ -44,12 +45,12 @@ public final class CoreStatPlayerManager implements StatPlayerManager {
 
 	@Override
 	public void addStatPlayer(@NotNull StatPlayer statPlayer) {
-		this.statPlayers.put(statPlayer.uuid(), statPlayer);
+		this.statPlayers.put(statPlayer.getUuid(), statPlayer);
 	}
 
 	@Override
 	public void removeStatPlayer(@NotNull StatPlayer statPlayer) {
-		this.statPlayers.remove(statPlayer.uuid());
+		this.statPlayers.remove(statPlayer.getUuid());
 	}
 
 	@Override
@@ -59,7 +60,7 @@ public final class CoreStatPlayerManager implements StatPlayerManager {
 
 	@Override
 	public @NotNull StatPlayer createStatPlayer(@NotNull UUID uuid) {
-		StatPlayer statPlayer = new StatPlayer(uuid);
+		StatPlayer statPlayer = new CoreStatPlayer(uuid);
 
 		this.addStatPlayer(statPlayer);
 

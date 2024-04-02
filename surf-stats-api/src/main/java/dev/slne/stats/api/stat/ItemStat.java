@@ -1,74 +1,31 @@
 package dev.slne.stats.api.stat;
 
-import jakarta.persistence.*;
 import org.apache.commons.lang3.builder.ToStringBuilder;
-import org.hibernate.annotations.JdbcTypeCode;
 import org.jetbrains.annotations.ApiStatus;
-import org.jetbrains.annotations.Contract;
 import org.jetbrains.annotations.NotNull;
 
-import java.sql.Types;
 import java.util.UUID;
 
 /**
  * The ItemStat class represents the statistics of an item.
  */
 @ApiStatus.NonExtendable
-@Entity
-@Table(name = "stats_items")
 public class ItemStat {
 
-	@Id
-	@GeneratedValue(strategy = GenerationType.IDENTITY)
-	@Column(name = "id", nullable = false)
-	private Long id = -1L;
-
-	@JdbcTypeCode(Types.BINARY)
-	@Column(name = "stat_owner", nullable = false, length = 16)
 	private UUID statOwner;
-
-	@Column(name = "server", nullable = false)
 	private String server;
-
-	@Column(name = "item_key", nullable = false)
 	private String itemKey;
-
-	@Column(name = "times_mined", nullable = false)
 	private Long timesMined;
-
-	@Column(name = "times_broken", nullable = false)
 	private Long timesBroken;
-
-	@Column(name = "times_crafted", nullable = false)
 	private Long timesCrafted;
-
-	@Column(name = "times_used", nullable = false)
 	private Long timesUsed;
-
-	@Column(name = "times_picked_up", nullable = false)
 	private Long timesPickedUp;
-
-	@Column(name = "times_dropped", nullable = false)
 	private Long timesDropped;
-
-	/**
-	 * Creates a new ItemStat object with default values for all fields.
-	 *
-	 * @param statOwner the UUID of the stat owner
-	 * @param server    the server
-	 * @param itemKey   the item key
-	 * @return a new ItemStat object with default values
-	 */
-	@Contract(value = "_, _, _ -> new", pure = true)
-	public static @NotNull ItemStat empty(UUID statOwner, String server, String itemKey) {
-		return new ItemStat(statOwner, server, itemKey, 0L, 0L, 0L, 0L, 0L, 0L);
-	}
 
 	/**
 	 * Represents statistics for an item.
 	 */
 	@ApiStatus.Internal
-	@Contract(pure = true)
 	protected ItemStat() {
 	}
 
@@ -85,9 +42,11 @@ public class ItemStat {
 	 * @param timesPickedUp the number of times the item has been picked up
 	 * @param timesDropped  the number of times the item has been dropped
 	 */
-	public ItemStat(UUID statOwner, String server, String itemKey, Long timesMined, Long timesBroken, Long timesCrafted,
-					Long timesUsed,
-					Long timesPickedUp, Long timesDropped) {
+	public ItemStat(
+		UUID statOwner, String server, String itemKey, Long timesMined, Long timesBroken, Long timesCrafted,
+		Long timesUsed,
+		Long timesPickedUp, Long timesDropped
+	) {
 		this.statOwner = statOwner;
 		this.server = server;
 		this.itemKey = itemKey;
@@ -100,12 +59,16 @@ public class ItemStat {
 	}
 
 	/**
-	 * Retrieves the id of the ItemStat object.
+	 * Creates a new ItemStat object with default values for all fields.
 	 *
-	 * @return the id of the ItemStat object
+	 * @param statOwner the UUID of the stat owner
+	 * @param server    the server
+	 * @param itemKey   the item key
+	 *
+	 * @return a new ItemStat object with default values
 	 */
-	public Long id() {
-		return id;
+	public static @NotNull ItemStat empty(UUID statOwner, String server, String itemKey) {
+		return new ItemStat(statOwner, server, itemKey, 0L, 0L, 0L, 0L, 0L, 0L);
 	}
 
 	/**
@@ -139,6 +102,7 @@ public class ItemStat {
 	 * Sets the number of times the item has been mined for this ItemStat object.
 	 *
 	 * @param timesMined the number of times the item has been mined
+	 *
 	 * @return the updated ItemStat object
 	 */
 	public ItemStat timesMined(Long timesMined) {
@@ -160,6 +124,7 @@ public class ItemStat {
 	 * Sets the number of times the item has been broken and returns the updated ItemStat object.
 	 *
 	 * @param timesBroken the number of times the item has been broken
+	 *
 	 * @return the updated ItemStat object
 	 */
 	public ItemStat timesBroken(Long timesBroken) {
@@ -181,6 +146,7 @@ public class ItemStat {
 	 * Sets the number of times the item has been crafted.
 	 *
 	 * @param timesCrafted the number of times the item has been crafted
+	 *
 	 * @return the modified ItemStat object
 	 */
 	public ItemStat timesCrafted(Long timesCrafted) {
@@ -202,6 +168,7 @@ public class ItemStat {
 	 * Updates the number of times the item has been used.
 	 *
 	 * @param timesUsed the number of times the item has been used
+	 *
 	 * @return the modified ItemStat object
 	 */
 	public ItemStat timesUsed(Long timesUsed) {
@@ -223,6 +190,7 @@ public class ItemStat {
 	 * Sets the number of times the item has been picked up.
 	 *
 	 * @param timesPickedUp the number of times the item has been picked up
+	 *
 	 * @return the updated ItemStat object
 	 */
 	public ItemStat timesPickedUp(Long timesPickedUp) {
@@ -244,6 +212,7 @@ public class ItemStat {
 	 * Sets the number of times the item has been dropped.
 	 *
 	 * @param timesDropped the number of times the item has been dropped
+	 *
 	 * @return the ItemStat object with the updated timesDropped value
 	 */
 	public ItemStat timesDropped(Long timesDropped) {
@@ -252,19 +221,17 @@ public class ItemStat {
 		return this;
 	}
 
+	/**
+	 * Gets server.
+	 *
+	 * @return the server
+	 */
+	public String server() {
+		return server;
+	}
+
 	@Override
 	public String toString() {
-		return new ToStringBuilder(this)
-			.append("id", id)
-			.append("statOwner", statOwner)
-			.append("server", server)
-			.append("itemKey", itemKey)
-			.append("timesMined", timesMined)
-			.append("timesBroken", timesBroken)
-			.append("timesCrafted", timesCrafted)
-			.append("timesUsed", timesUsed)
-			.append("timesPickedUp", timesPickedUp)
-			.append("timesDropped", timesDropped)
-			.toString();
+		return ToStringBuilder.reflectionToString(this);
 	}
 }

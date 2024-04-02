@@ -51,7 +51,7 @@ public final class WorldSaveListener implements Listener {
 			StatsApi.getInstance().getStatProcessor().processStats(statPlayer, statFile);
 
 			statPlayer.saveStats().thenAcceptAsync(v -> {
-				if (statPlayer.disconnected()) {
+				if (statPlayer.isDisconnected()) {
 					StatsApi.getInstance().getStatPlayerManager().removeStatPlayer(statPlayer);
 				}
 			}).exceptionally(throwable -> {

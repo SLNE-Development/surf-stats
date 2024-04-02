@@ -26,7 +26,7 @@ public final class GeneralStatProcessor extends StatProcessor<GeneralStat> {
 				stats.add(stat);
 			},
 			() -> {
-				GeneralStat generalStat = new GeneralStat(player.uuid(), StatsApi.getServer(), statName, statValue);
+				GeneralStat generalStat = new GeneralStat(player.getUuid(), StatsApi.getServer(), statName, statValue);
 
 				stats.add(generalStat);
 				player.addGeneralStat(generalStat);

@@ -2,7 +2,6 @@ package dev.slne.stats.core.spring;
 
 import dev.slne.data.api.DataApi;
 import dev.slne.data.api.spring.SurfSpringApplication;
-import org.jetbrains.annotations.ApiStatus;
 import org.springframework.context.ConfigurableApplicationContext;
 
 /**
@@ -11,12 +10,8 @@ import org.springframework.context.ConfigurableApplicationContext;
  */
 @SurfSpringApplication(
 	scanBasePackages = "dev.slne.stats",
-	baseJpaPackages = "dev.slne.stats.api.stat.repository",
-	baseRedisPackages = "dev.slne.stats.api.stat.redis",
-	entityScanPackages = "dev.slne.stats"
+	scanFeignBasePackages = "dev.slne.stats"
 )
-@ApiStatus.NonExtendable
-@ApiStatus.Internal
 public class StatsSpringApplication {
 
 	/**
@@ -24,6 +19,7 @@ public class StatsSpringApplication {
 	 * It provides a method to run the configurable application context.
 	 *
 	 * @param classLoader the class loader to use
+	 *
 	 * @return configurable application context
 	 */
 	public static ConfigurableApplicationContext run(ClassLoader classLoader) {

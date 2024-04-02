@@ -28,8 +28,8 @@ public final class DroppedStatProcessor extends StatProcessor<ItemStat> {
 				stats.add(stat);
 			},
 			() -> {
-				ItemStat itemStat = ItemStat.empty(player.uuid(), StatsApi.getServer(), statName)
-					.timesDropped(statValue);
+				ItemStat itemStat = ItemStat.empty(player.getUuid(), StatsApi.getServer(), statName)
+											.timesDropped(statValue);
 
 				stats.add(itemStat);
 				player.addItemStat(itemStat);

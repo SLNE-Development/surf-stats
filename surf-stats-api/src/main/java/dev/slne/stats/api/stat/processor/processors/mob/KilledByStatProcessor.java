@@ -22,17 +22,17 @@ public final class KilledByStatProcessor extends StatProcessor<MobStat> {
 		List<MobStat> stats = new ArrayList<>(statMap.size());
 
 		statMap.forEach((statName, statValue) -> player.getMobStat(statName).ifPresentOrElse(
-            stat -> {
-                putIfLarger(stat.killedBy(), statValue, stat::killedBy);
-                stats.add(stat);
-            },
-            () -> {
-                MobStat mobStat = new MobStat(player.uuid(), StatsApi.getServer(), statName, 0L, statValue);
+			stat -> {
+				putIfLarger(stat.killedBy(), statValue, stat::killedBy);
+				stats.add(stat);
+			},
+			() -> {
+				MobStat mobStat = new MobStat(player.getUuid(), StatsApi.getServer(), statName, 0L, statValue);
 
-                stats.add(mobStat);
-                player.addMobStat(mobStat);
-            }
-        ));
+				stats.add(mobStat);
+				player.addMobStat(mobStat);
+			}
+		));
 
 		return stats;
 	}

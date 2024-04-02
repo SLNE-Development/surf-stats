@@ -21,18 +21,18 @@ public final class PickedUpStatProcessor extends StatProcessor<ItemStat> {
 		List<ItemStat> stats = new ArrayList<>(statMap.size());
 
 		statMap.forEach((statName, statValue) -> player.getItemStat(statName).ifPresentOrElse(
-            stat -> {
-                putIfLarger(stat.timesPickedUp(), statValue, stat::timesPickedUp);
-                stats.add(stat);
-            },
-            () -> {
-                ItemStat itemStat = ItemStat.empty(player.uuid(), StatsApi.getServer(), statName)
-						.timesPickedUp(statValue);
+			stat -> {
+				putIfLarger(stat.timesPickedUp(), statValue, stat::timesPickedUp);
+				stats.add(stat);
+			},
+			() -> {
+				ItemStat itemStat = ItemStat.empty(player.getUuid(), StatsApi.getServer(), statName)
+											.timesPickedUp(statValue);
 
-                stats.add(itemStat);
-                player.addItemStat(itemStat);
-            }
-        ));
+				stats.add(itemStat);
+				player.addItemStat(itemStat);
+			}
+		));
 
 		return stats;
 	}

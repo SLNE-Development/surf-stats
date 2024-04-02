@@ -55,7 +55,7 @@ public final class BukkitStatsInstance extends CoreStatsInstance {
 
 	@Override
 	public void disconnectPlayer(@NotNull StatPlayer statPlayer, Component reason) {
-		Player player = Bukkit.getPlayer(statPlayer.uuid());
+		Player player = Bukkit.getPlayer(statPlayer.getUuid());
 
 		new BukkitRunnable() {
 			@Override

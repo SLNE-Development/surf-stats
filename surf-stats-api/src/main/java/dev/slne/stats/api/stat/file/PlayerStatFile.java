@@ -110,8 +110,7 @@ public class PlayerStatFile {
 	/**
 	 * Retrieves a map of the "used" statistics from the player's stat file.
 	 *
-	 * @return a map containing the "used" statistics, where the keys are the names of the items
-	 * and the values are the corresponding usage counts
+	 * @return a map containing the "used" statistics, where the keys are the names of the items and the values are the corresponding usage counts
 	 */
 	public Map<String, Long> used() {
 		return used;
@@ -129,8 +128,7 @@ public class PlayerStatFile {
 	/**
 	 * Retrieves the crafted statistics for a player.
 	 *
-	 * @return a Map containing the name of each crafted item and the number of times it has been crafted,
-	 * or an empty Map if no items have been crafted
+	 * @return a Map containing the name of each crafted item and the number of times it has been crafted, or an empty Map if no items have been crafted
 	 */
 	public Map<String, Long> crafted() {
 		return crafted;
@@ -186,6 +184,7 @@ public class PlayerStatFile {
 	 * Sets the UUID of the PlayerStatFile.
 	 *
 	 * @param uuid the UUID to set
+	 *
 	 * @return the updated PlayerStatFile object
 	 */
 	public PlayerStatFile uuid(UUID uuid) {
@@ -197,6 +196,7 @@ public class PlayerStatFile {
 	 * Sets the data version of the PlayerStatFile.
 	 *
 	 * @param dataVersion the data version to set
+	 *
 	 * @return the updated PlayerStatFile object
 	 */
 	public PlayerStatFile dataVersion(String dataVersion) {
@@ -207,19 +207,7 @@ public class PlayerStatFile {
 
 	@Override
 	public String toString() {
-		return new ToStringBuilder(this)
-			.append("uuid", uuid)
-			.append("dataVersion", dataVersion)
-			.append("custom", custom)
-			.append("used", used)
-			.append("dropped", dropped)
-			.append("crafted", crafted)
-			.append("mined", mined)
-			.append("pickedUp", pickedUp)
-			.append("broken", broken)
-			.append("killed", killed)
-			.append("killedBy", killedBy)
-			.toString();
+		return ToStringBuilder.reflectionToString(this);
 	}
 
 	/**
@@ -242,7 +230,9 @@ public class PlayerStatFile {
 		 * Reads a player's statistics file.
 		 *
 		 * @param uuid the UUID of the player whose statistics file needs to be read
+		 *
 		 * @return the PlayerStatFile object representing the player's statistics file
+		 *
 		 * @throws FileNotFoundException if the statistics file for the player with the specified UUID cannot be found
 		 */
 		public PlayerStatFile read(@NotNull UUID uuid) throws FileNotFoundException {
@@ -250,21 +240,22 @@ public class PlayerStatFile {
 			JsonObject playerStatFile = gson.fromJson(new JsonReader(new FileReader(playerFile)), JsonObject.class);
 
 			return gson.fromJson(playerStatFile.getAsJsonObject("stats"), PlayerStatFile.class)
-				.dataVersion(playerStatFile.get("DataVersion").getAsString())
-				.uuid(uuid);
+					   .dataVersion(playerStatFile.get("DataVersion").getAsString())
+					   .uuid(uuid);
 		}
 
 		/**
 		 * Reads a player stat file from the provided JSON string.
 		 *
 		 * @param json the JSON string representing the player stat file
+		 *
 		 * @return the PlayerStatFile object parsed from the JSON string
 		 */
 		public PlayerStatFile read(String json) {
 			JsonObject playerStatFile = gson.fromJson(json, JsonObject.class);
 
 			return gson.fromJson(playerStatFile.getAsJsonObject("stats"), PlayerStatFile.class)
-				.dataVersion(playerStatFile.get("DataVersion").getAsString());
+					   .dataVersion(playerStatFile.get("DataVersion").getAsString());
 		}
 
 		@Override

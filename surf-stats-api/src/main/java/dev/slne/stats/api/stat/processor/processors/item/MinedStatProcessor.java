@@ -27,8 +27,8 @@ public final class MinedStatProcessor extends StatProcessor<ItemStat> {
 				stats.add(stat);
 			},
 			() -> {
-				ItemStat itemStat = ItemStat.empty(player.uuid(), StatsApi.getServer(), statName)
-					.timesMined(statValue);
+				ItemStat itemStat = ItemStat.empty(player.getUuid(), StatsApi.getServer(), statName)
+											.timesMined(statValue);
 
 				stats.add(itemStat);
 				player.addItemStat(itemStat);

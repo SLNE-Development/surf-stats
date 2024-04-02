@@ -26,7 +26,7 @@ public final class StatPlayerListener implements Listener {
 	public void onPlayerJoin(PlayerJoinEvent event) {
 		StatsApi.getStatPlayer(event.getPlayer().getUniqueId()).loadStats().exceptionally(throwable -> {
 			ComponentLogger.logger("error")
-				.error("Failed to load stats for player " + event.getPlayer().getName(), throwable);
+						   .error("Failed to load stats for player " + event.getPlayer().getName(), throwable);
 
 			return null;
 		});
@@ -40,13 +40,15 @@ public final class StatPlayerListener implements Listener {
 	@EventHandler
 	public void onPlayerQuit(PlayerQuitEvent event) {
 		StatPlayer statPlayer = StatsApi.getStatPlayer(event.getPlayer().getUniqueId());
-		statPlayer.disconnected(true);
+		statPlayer.setDisconnected(true);
 
-		StatsApi.getInstance().getStatProcessor().processStats(statPlayer,
-			PlayerStatSaver.getPlayerStatsJson(event.getPlayer()));
+		StatsApi.getInstance().getStatProcessor().processStats(
+			statPlayer,
+			PlayerStatSaver.getPlayerStatsJson(event.getPlayer())
+		);
 
 		statPlayer.saveStats().thenAcceptAsync(v -> {
-			if (statPlayer.saving()) {
+			if (statPlayer.isSaving()) {
 				return;
 			}
 

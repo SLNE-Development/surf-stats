@@ -26,8 +26,8 @@ public final class BrokenStatProcessor extends StatProcessor<ItemStat> {
 				stats.add(stat);
 			},
 			() -> {
-				ItemStat itemStat = ItemStat.empty(player.uuid(), StatsApi.getServer(), statName)
-					.timesBroken(statValue);
+				ItemStat itemStat = ItemStat.empty(player.getUuid(), StatsApi.getServer(), statName)
+											.timesBroken(statValue);
 
 				stats.add(itemStat);
 				player.addItemStat(itemStat);
