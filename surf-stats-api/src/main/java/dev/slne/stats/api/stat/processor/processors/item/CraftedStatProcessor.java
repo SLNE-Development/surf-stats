@@ -22,12 +22,12 @@ public final class CraftedStatProcessor extends StatProcessor<ItemStat> {
 
 		statMap.forEach((statName, statValue) -> player.getItemStat(statName).ifPresentOrElse(
 			stat -> {
-				putIfLarger(stat.timesCrafted(), statValue, stat::timesCrafted);
+				putIfLarger(stat.getTimesCrafted(), statValue, stat::setTimesCrafted);
 				stats.add(stat);
 			},
 			() -> {
 				ItemStat itemStat = ItemStat.empty(player.getUuid(), StatsApi.getServer(), statName)
-											.timesCrafted(statValue);
+											.setTimesCrafted(statValue);
 
 				stats.add(itemStat);
 				player.addItemStat(itemStat);

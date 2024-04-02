@@ -7,9 +7,10 @@ plugins {
 
 repositories {
 	mavenCentral()
-	mavenLocal()
 	gradlePluginPortal()
 
+	maven("https://jitpack.io")
+	maven("https://repo.codemc.io/repository/maven-releases/")
 	maven("https://repo.papermc.io/repository/maven-public/")
 	maven("https://packages.slne.dev/maven/p/surf/maven") {
 		name = "space-maven"

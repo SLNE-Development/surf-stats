@@ -36,5 +36,15 @@
       <option name="name" value="maven2" />
       <option name="url" value="https://packages.slne.dev/maven/p/surf/maven" />
     </remote-repository>
+    <remote-repository>
+      <option name="id" value="maven" />
+      <option name="name" value="maven" />
+      <option name="url" value="https://jitpack.io" />
+    </remote-repository>
+    <remote-repository>
+      <option name="id" value="maven2" />
+      <option name="name" value="maven2" />
+      <option name="url" value="https://repo.codemc.io/repository/maven-releases/" />
+    </remote-repository>
   </component>
 </project>

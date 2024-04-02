@@ -157,17 +157,17 @@ public class CoreStatPlayer implements StatPlayer {
 
 	@Override
 	public @NotNull CompletableFuture<Void> saveGeneralStats() {
-		return statClient.get().saveGeneralStats(uuid, generalStats);
+		return statClient.get().saveGeneralStats(uuid, generalStats.toArray(GeneralStat[]::new));
 	}
 
 	@Override
 	public @NotNull CompletableFuture<Void> saveItemStats() {
-		return statClient.get().saveItemStats(uuid, itemStats);
+		return statClient.get().saveItemStats(uuid, itemStats.toArray(ItemStat[]::new));
 	}
 
 	@Override
 	public @NotNull CompletableFuture<Void> saveMobStats() {
-		return statClient.get().saveMobStats(uuid, mobStats);
+		return statClient.get().saveMobStats(uuid, mobStats.toArray(MobStat[]::new));
 	}
 
 	@Override
@@ -185,17 +185,17 @@ public class CoreStatPlayer implements StatPlayer {
 
 	@Override
 	public @NotNull Optional<GeneralStat> getGeneralStat(String name) {
-		return generalStats.stream().filter(stat -> stat.generalKey().equals(name)).findFirst();
+		return generalStats.stream().filter(stat -> stat.getGeneralKey().equals(name)).findFirst();
 	}
 
 	@Override
 	public @NotNull Optional<ItemStat> getItemStat(String name) {
-		return itemStats.stream().filter(stat -> stat.itemKey().equals(name)).findFirst();
+		return itemStats.stream().filter(stat -> stat.getItemKey().equals(name)).findFirst();
 	}
 
 	@Override
 	public @NotNull Optional<MobStat> getMobStat(String name) {
-		return mobStats.stream().filter(stat -> stat.mobKey().equals(name)).findFirst();
+		return mobStats.stream().filter(stat -> stat.getMobKey().equals(name)).findFirst();
 	}
 
 	@Override

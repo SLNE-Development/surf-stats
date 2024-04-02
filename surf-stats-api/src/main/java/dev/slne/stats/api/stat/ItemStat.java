@@ -1,5 +1,6 @@
 package dev.slne.stats.api.stat;
 
+import com.fasterxml.jackson.annotation.JsonProperty;
 import org.apache.commons.lang3.builder.ToStringBuilder;
 import org.jetbrains.annotations.ApiStatus;
 import org.jetbrains.annotations.NotNull;
@@ -12,14 +13,34 @@ import java.util.UUID;
 @ApiStatus.NonExtendable
 public class ItemStat {
 
+	@JsonProperty("id")
+	private Long id;
+
+	@JsonProperty("stat_owner")
 	private UUID statOwner;
+
+	@JsonProperty("server")
 	private String server;
+
+	@JsonProperty("item_key")
 	private String itemKey;
+
+	@JsonProperty("times_mined")
 	private Long timesMined;
+
+	@JsonProperty("times_broken")
 	private Long timesBroken;
+
+	@JsonProperty("times_crafted")
 	private Long timesCrafted;
+
+	@JsonProperty("times_used")
 	private Long timesUsed;
+
+	@JsonProperty("times_picked_up")
 	private Long timesPickedUp;
+
+	@JsonProperty("times_dropped")
 	private Long timesDropped;
 
 	/**
@@ -72,11 +93,20 @@ public class ItemStat {
 	}
 
 	/**
+	 * Gets id.
+	 *
+	 * @return the id
+	 */
+	public Long getId() {
+		return id;
+	}
+
+	/**
 	 * Returns the UUID of the stat owner.
 	 *
 	 * @return the UUID of the stat owner
 	 */
-	public UUID statOwner() {
+	public UUID getStatOwner() {
 		return statOwner;
 	}
 
@@ -85,7 +115,7 @@ public class ItemStat {
 	 *
 	 * @return the item key of the {@link ItemStat} object
 	 */
-	public String itemKey() {
+	public String getItemKey() {
 		return itemKey;
 	}
 
@@ -94,7 +124,7 @@ public class ItemStat {
 	 *
 	 * @return the number of times the item has been mined
 	 */
-	public Long timesMined() {
+	public Long getTimesMined() {
 		return timesMined;
 	}
 
@@ -105,7 +135,7 @@ public class ItemStat {
 	 *
 	 * @return the updated ItemStat object
 	 */
-	public ItemStat timesMined(Long timesMined) {
+	public ItemStat setTimesMined(Long timesMined) {
 		this.timesMined = timesMined;
 
 		return this;
@@ -116,7 +146,7 @@ public class ItemStat {
 	 *
 	 * @return the number of times the item has been broken
 	 */
-	public Long timesBroken() {
+	public Long getTimesBroken() {
 		return timesBroken;
 	}
 
@@ -127,7 +157,7 @@ public class ItemStat {
 	 *
 	 * @return the updated ItemStat object
 	 */
-	public ItemStat timesBroken(Long timesBroken) {
+	public ItemStat setTimesBroken(Long timesBroken) {
 		this.timesBroken = timesBroken;
 
 		return this;
@@ -138,7 +168,7 @@ public class ItemStat {
 	 *
 	 * @return the number of times the item has been crafted
 	 */
-	public Long timesCrafted() {
+	public Long getTimesCrafted() {
 		return timesCrafted;
 	}
 
@@ -149,7 +179,7 @@ public class ItemStat {
 	 *
 	 * @return the modified ItemStat object
 	 */
-	public ItemStat timesCrafted(Long timesCrafted) {
+	public ItemStat setTimesCrafted(Long timesCrafted) {
 		this.timesCrafted = timesCrafted;
 
 		return this;
@@ -160,7 +190,7 @@ public class ItemStat {
 	 *
 	 * @return the number of times the item has been used
 	 */
-	public Long timesUsed() {
+	public Long getTimesUsed() {
 		return timesUsed;
 	}
 
@@ -171,7 +201,7 @@ public class ItemStat {
 	 *
 	 * @return the modified ItemStat object
 	 */
-	public ItemStat timesUsed(Long timesUsed) {
+	public ItemStat setTimesUsed(Long timesUsed) {
 		this.timesUsed = timesUsed;
 
 		return this;
@@ -182,7 +212,7 @@ public class ItemStat {
 	 *
 	 * @return the number of times the item has been picked up
 	 */
-	public Long timesPickedUp() {
+	public Long getTimesPickedUp() {
 		return timesPickedUp;
 	}
 
@@ -193,7 +223,7 @@ public class ItemStat {
 	 *
 	 * @return the updated ItemStat object
 	 */
-	public ItemStat timesPickedUp(Long timesPickedUp) {
+	public ItemStat setTimesPickedUp(Long timesPickedUp) {
 		this.timesPickedUp = timesPickedUp;
 
 		return this;
@@ -204,7 +234,7 @@ public class ItemStat {
 	 *
 	 * @return The number of times the item has been dropped.
 	 */
-	public Long timesDropped() {
+	public Long getTimesDropped() {
 		return timesDropped;
 	}
 
@@ -215,7 +245,7 @@ public class ItemStat {
 	 *
 	 * @return the ItemStat object with the updated timesDropped value
 	 */
-	public ItemStat timesDropped(Long timesDropped) {
+	public ItemStat setTimesDropped(Long timesDropped) {
 		this.timesDropped = timesDropped;
 
 		return this;
@@ -226,7 +256,7 @@ public class ItemStat {
 	 *
 	 * @return the server
 	 */
-	public String server() {
+	public String getServer() {
 		return server;
 	}
 

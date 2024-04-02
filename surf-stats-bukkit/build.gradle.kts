@@ -1,5 +1,6 @@
 plugins {
 	id("dev.slne.java-common-conventions")
+	id("dev.slne.java-library-conventions")
 	id("dev.slne.java-shadow-conventions")
 	alias(libs.plugins.run.paper.plugin)
 }
@@ -8,6 +9,7 @@ dependencies {
 	implementation(project(":surf-stats-core"))
 
 	compileOnly(libs.paper.api)
+	compileOnlyApi(libs.surf.api)
 }
 
 tasks {

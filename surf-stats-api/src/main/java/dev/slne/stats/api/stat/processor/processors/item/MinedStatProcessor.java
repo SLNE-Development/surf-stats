@@ -23,12 +23,12 @@ public final class MinedStatProcessor extends StatProcessor<ItemStat> {
 
 		statMap.forEach((statName, statValue) -> player.getItemStat(statName).ifPresentOrElse(
 			stat -> {
-				putIfLarger(stat.timesMined(), statValue, stat::timesMined);
+				putIfLarger(stat.getTimesMined(), statValue, stat::setTimesMined);
 				stats.add(stat);
 			},
 			() -> {
 				ItemStat itemStat = ItemStat.empty(player.getUuid(), StatsApi.getServer(), statName)
-											.timesMined(statValue);
+											.setTimesMined(statValue);
 
 				stats.add(itemStat);
 				player.addItemStat(itemStat);

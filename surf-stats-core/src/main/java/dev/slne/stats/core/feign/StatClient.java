@@ -67,7 +67,7 @@ public interface StatClient {
 	 * @param generalStats the general stats
 	 */
 	@PostMapping(value = "/{uuid}/general")
-	void saveGeneralStatsSync(@PathVariable("uuid") UUID uuid, List<GeneralStat> generalStats);
+	void saveGeneralStatsSync(@PathVariable("uuid") UUID uuid, GeneralStat[] generalStats);
 
 	/**
 	 * Save item stats.
@@ -76,7 +76,7 @@ public interface StatClient {
 	 * @param itemStats the item stats
 	 */
 	@PostMapping(value = "/{uuid}/item")
-	void saveItemStatsSync(@PathVariable("uuid") UUID uuid, List<ItemStat> itemStats);
+	void saveItemStatsSync(@PathVariable("uuid") UUID uuid, ItemStat[] itemStats);
 
 	/**
 	 * Save mob stats.
@@ -85,7 +85,7 @@ public interface StatClient {
 	 * @param mobStats the mob stats
 	 */
 	@PostMapping(value = "/{uuid}/mob")
-	void saveMobStatsSync(@PathVariable("uuid") UUID uuid, List<MobStat> mobStats);
+	void saveMobStatsSync(@PathVariable("uuid") UUID uuid, MobStat[] mobStats);
 
 	/**
 	 * Gets general stats by uuid and server.
@@ -131,7 +131,7 @@ public interface StatClient {
 	 *
 	 * @return the completable future
 	 */
-	default CompletableFuture<Void> saveGeneralStats(UUID uuid, List<GeneralStat> generalStats) {
+	default CompletableFuture<Void> saveGeneralStats(UUID uuid, GeneralStat[] generalStats) {
 		return CompletableFuture.runAsync(() -> saveGeneralStatsSync(uuid, generalStats));
 	}
 
@@ -143,7 +143,7 @@ public interface StatClient {
 	 *
 	 * @return the completable future
 	 */
-	default CompletableFuture<Void> saveItemStats(UUID uuid, List<ItemStat> itemStats) {
+	default CompletableFuture<Void> saveItemStats(UUID uuid, ItemStat[] itemStats) {
 		return CompletableFuture.runAsync(() -> saveItemStatsSync(uuid, itemStats));
 	}
 
@@ -155,7 +155,7 @@ public interface StatClient {
 	 *
 	 * @return the completable future
 	 */
-	default CompletableFuture<Void> saveMobStats(UUID uuid, List<MobStat> mobStats) {
+	default CompletableFuture<Void> saveMobStats(UUID uuid, MobStat[] mobStats) {
 		return CompletableFuture.runAsync(() -> saveMobStatsSync(uuid, mobStats));
 	}
 

@@ -23,7 +23,7 @@ public final class KilledStatProcessor extends StatProcessor<MobStat> {
 
 		statMap.forEach((statName, statValue) -> player.getMobStat(statName).ifPresentOrElse(
 			stat -> {
-				putIfLarger(stat.killed(), statValue, stat::killed);
+				putIfLarger(stat.getKilled(), statValue, stat::setKilled);
 				stats.add(stat);
 			},
 			() -> {

@@ -22,12 +22,12 @@ public final class BrokenStatProcessor extends StatProcessor<ItemStat> {
 
 		statMap.forEach((statName, statValue) -> player.getItemStat(statName).ifPresentOrElse(
 			stat -> {
-				putIfLarger(stat.timesBroken(), statValue, stat::timesBroken);
+				putIfLarger(stat.getTimesBroken(), statValue, stat::setTimesBroken);
 				stats.add(stat);
 			},
 			() -> {
 				ItemStat itemStat = ItemStat.empty(player.getUuid(), StatsApi.getServer(), statName)
-											.timesBroken(statValue);
+											.setTimesBroken(statValue);
 
 				stats.add(itemStat);
 				player.addItemStat(itemStat);

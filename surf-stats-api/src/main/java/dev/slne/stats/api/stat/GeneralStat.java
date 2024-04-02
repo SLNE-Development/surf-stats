@@ -1,7 +1,7 @@
 package dev.slne.stats.api.stat;
 
+import com.fasterxml.jackson.annotation.JsonProperty;
 import org.apache.commons.lang3.builder.ToStringBuilder;
-import org.jetbrains.annotations.ApiStatus;
 
 import java.util.UUID;
 
@@ -9,20 +9,28 @@ import java.util.UUID;
  * The GeneralStat class represents a general statistical data point.
  * It is used to store information about a specific statistic for a given key and owner.
  */
-@ApiStatus.NonExtendable
 public class GeneralStat {
 
+	@JsonProperty("id")
+	private Long id;
+
+	@JsonProperty("general_key")
 	private String generalKey;
+
+	@JsonProperty("server")
 	private String server;
+
+	@JsonProperty("stat_owner")
 	private UUID statOwner;
+
+	@JsonProperty("stat_value")
 	private Long statValue;
 
 	/**
 	 * The GeneralStat class represents a general statistical data point.
 	 * It is used to store information about a specific statistic for a given key and owner.
 	 */
-	@ApiStatus.Internal
-	protected GeneralStat() {
+	public GeneralStat() {
 	}
 
 	/**
@@ -40,13 +48,21 @@ public class GeneralStat {
 		this.statValue = statValue;
 	}
 
+	/**
+	 * Gets id.
+	 *
+	 * @return the id
+	 */
+	public Long getId() {
+		return id;
+	}
 
 	/**
 	 * Returns the server name associated with this GeneralStat object.
 	 *
 	 * @return the server name
 	 */
-	public String server() {
+	public String getServer() {
 		return server;
 	}
 
@@ -55,7 +71,7 @@ public class GeneralStat {
 	 *
 	 * @return the general key
 	 */
-	public String generalKey() {
+	public String getGeneralKey() {
 		return generalKey;
 	}
 
@@ -64,7 +80,7 @@ public class GeneralStat {
 	 *
 	 * @return the UUID of the statistic owner
 	 */
-	public UUID statOwner() {
+	public UUID getStatOwner() {
 		return statOwner;
 	}
 
@@ -73,7 +89,7 @@ public class GeneralStat {
 	 *
 	 * @return the value of the stat
 	 */
-	public Long statValue() {
+	public Long getStatValue() {
 		return statValue;
 	}
 
@@ -84,7 +100,7 @@ public class GeneralStat {
 	 *
 	 * @return the updated GeneralStat object
 	 */
-	public GeneralStat statValue(Long statValue) {
+	public GeneralStat setStatValue(Long statValue) {
 		this.statValue = statValue;
 		return this;
 	}

@@ -46,13 +46,18 @@ public final class StatPlayerListener implements Listener {
 			statPlayer,
 			PlayerStatSaver.getPlayerStatsJson(event.getPlayer())
 		);
-
+		
 		statPlayer.saveStats().thenAcceptAsync(v -> {
 			if (statPlayer.isSaving()) {
 				return;
 			}
 
 			StatsApi.getInstance().getStatPlayerManager().removeStatPlayer(event.getPlayer().getUniqueId());
+		}).exceptionally(throwable -> {
+			ComponentLogger.logger("error")
+						   .error("Failed to save stats for player " + event.getPlayer().getName(), throwable);
+
+			return null;
 		});
 	}
 }

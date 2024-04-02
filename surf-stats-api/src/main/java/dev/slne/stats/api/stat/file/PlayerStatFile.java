@@ -253,7 +253,7 @@ public class PlayerStatFile {
 		 */
 		public PlayerStatFile read(String json) {
 			JsonObject playerStatFile = gson.fromJson(json, JsonObject.class);
-
+			
 			return gson.fromJson(playerStatFile.getAsJsonObject("stats"), PlayerStatFile.class)
 					   .dataVersion(playerStatFile.get("DataVersion").getAsString());
 		}

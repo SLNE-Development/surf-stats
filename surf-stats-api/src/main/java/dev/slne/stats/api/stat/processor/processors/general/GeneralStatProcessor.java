@@ -22,7 +22,7 @@ public final class GeneralStatProcessor extends StatProcessor<GeneralStat> {
 
 		statMap.forEach((statName, statValue) -> player.getGeneralStat(statName).ifPresentOrElse(
 			stat -> {
-				putIfLarger(stat.statValue(), statValue, stat::statValue);
+				putIfLarger(stat.getStatValue(), statValue, stat::setStatValue);
 				stats.add(stat);
 			},
 			() -> {

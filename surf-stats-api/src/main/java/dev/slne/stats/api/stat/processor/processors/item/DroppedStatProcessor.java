@@ -24,12 +24,12 @@ public final class DroppedStatProcessor extends StatProcessor<ItemStat> {
 
 		statMap.forEach((statName, statValue) -> player.getItemStat(statName).ifPresentOrElse(
 			stat -> {
-				putIfLarger(stat.timesDropped(), statValue, stat::timesDropped);
+				putIfLarger(stat.getTimesDropped(), statValue, stat::setTimesDropped);
 				stats.add(stat);
 			},
 			() -> {
 				ItemStat itemStat = ItemStat.empty(player.getUuid(), StatsApi.getServer(), statName)
-											.timesDropped(statValue);
+											.setTimesDropped(statValue);
 
 				stats.add(itemStat);
 				player.addItemStat(itemStat);

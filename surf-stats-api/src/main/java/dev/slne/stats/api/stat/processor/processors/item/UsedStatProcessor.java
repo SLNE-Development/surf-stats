@@ -23,12 +23,12 @@ public final class UsedStatProcessor extends StatProcessor<ItemStat> {
 
 		statMap.forEach((statName, statValue) -> player.getItemStat(statName).ifPresentOrElse(
 			stat -> {
-				putIfLarger(stat.timesUsed(), statValue, stat::timesUsed);
+				putIfLarger(stat.getTimesUsed(), statValue, stat::setTimesUsed);
 				stats.add(stat);
 			},
 			() -> {
 				ItemStat itemStat = ItemStat.empty(player.getUuid(), StatsApi.getServer(), statName)
-											.timesUsed(statValue);
+											.setTimesUsed(statValue);
 
 				stats.add(itemStat);
 				player.addItemStat(itemStat);

@@ -1,5 +1,6 @@
 package dev.slne.stats.api.stat;
 
+import com.fasterxml.jackson.annotation.JsonProperty;
 import org.apache.commons.lang3.builder.ToStringBuilder;
 import org.jetbrains.annotations.ApiStatus;
 
@@ -11,10 +12,22 @@ import java.util.UUID;
 @ApiStatus.NonExtendable
 public class MobStat {
 
+	@JsonProperty("id")
+	private Long id;
+
+	@JsonProperty("stat_owner")
 	private UUID statOwner;
+
+	@JsonProperty("server")
 	private String server;
+
+	@JsonProperty("mob_key")
 	private String mobKey;
+
+	@JsonProperty("killed")
 	private Long killed;
+
+	@JsonProperty("killed_by")
 	private Long killedBy;
 
 	/**
@@ -42,11 +55,20 @@ public class MobStat {
 	}
 
 	/**
+	 * Gets id.
+	 *
+	 * @return the id
+	 */
+	public Long getId() {
+		return id;
+	}
+
+	/**
 	 * Returns the UUID of the stat owner.
 	 *
 	 * @return The UUID of the stat owner.
 	 */
-	public UUID statOwner() {
+	public UUID getStatOwner() {
 		return statOwner;
 	}
 
@@ -55,7 +77,7 @@ public class MobStat {
 	 *
 	 * @return The mob key.
 	 */
-	public String mobKey() {
+	public String getMobKey() {
 		return mobKey;
 	}
 
@@ -64,7 +86,7 @@ public class MobStat {
 	 *
 	 * @return The number of times the mob was killed.
 	 */
-	public Long killed() {
+	public Long getKilled() {
 		return killed;
 	}
 
@@ -75,7 +97,7 @@ public class MobStat {
 	 *
 	 * @return The updated MobStat object.
 	 */
-	public MobStat killed(Long killed) {
+	public MobStat setKilled(Long killed) {
 		this.killed = killed;
 
 		return this;
@@ -86,7 +108,7 @@ public class MobStat {
 	 *
 	 * @return The number of times the mob was killed by the player.
 	 */
-	public Long killedBy() {
+	public Long getKilleyBy() {
 		return killedBy;
 	}
 
@@ -97,7 +119,7 @@ public class MobStat {
 	 *
 	 * @return The updated MobStat object.
 	 */
-	public MobStat killedBy(Long killedBy) {
+	public MobStat setKilledBy(Long killedBy) {
 		this.killedBy = killedBy;
 
 		return this;
@@ -108,7 +130,7 @@ public class MobStat {
 	 *
 	 * @return the string
 	 */
-	public String server() {
+	public String getServer() {
 		return server;
 	}
 
