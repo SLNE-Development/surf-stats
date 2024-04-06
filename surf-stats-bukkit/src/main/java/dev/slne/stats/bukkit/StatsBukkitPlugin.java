@@ -31,14 +31,15 @@ public class StatsBukkitPlugin extends JavaPlugin {
 	}
 
 	@Override
-	public void onEnable() {
-		statsInstance.onEnable();
-	}
-
-
-	@Override
 	public void onDisable() {
 		statsInstance.onDisable();
+	}
+
+	@Override
+	public void onEnable() {
+		statsInstance.onEnable();
+
+		new SaveCommand(getCommand("savestats"));
 	}
 
 	/**

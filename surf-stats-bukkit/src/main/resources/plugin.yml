@@ -7,4 +7,4 @@ depend:
     - SurfBukkitAPI
 
 commands:
-    stats:
+    savestats:

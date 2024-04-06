@@ -108,7 +108,7 @@ public class MobStat {
 	 *
 	 * @return The number of times the mob was killed by the player.
 	 */
-	public Long getKilleyBy() {
+	public Long getKilledBy() {
 		return killedBy;
 	}
 
