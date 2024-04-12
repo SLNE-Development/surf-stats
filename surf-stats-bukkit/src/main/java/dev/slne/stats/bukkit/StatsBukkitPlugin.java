@@ -39,7 +39,7 @@ public class StatsBukkitPlugin extends JavaPlugin {
 	public void onEnable() {
 		statsInstance.onEnable();
 
-		new SaveCommand(getCommand("savestats"));
+//		new SaveCommand(getCommand("savestats"));
 	}
 
 	/**
