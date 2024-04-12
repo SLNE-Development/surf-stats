@@ -15,7 +15,7 @@ import java.util.concurrent.CompletableFuture;
 /**
  * The interface Stat client.
  */
-@FeignClient(name = "stat-service", url = "https://dapi.slne.dev/api/stats")
+@FeignClient(name = "stat-service", url = "https://dapi.slne.dev/api/en_us/stats")
 public interface StatClient {
 
 	/**
