@@ -3,5 +3,5 @@ plugins {
 }
 
 dependencies {
-    api(project(":surf-stats-api"))
+    api(project(":surf-stats-core"))
 }
