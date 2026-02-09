@@ -1,0 +1,13 @@
+name: SurfStats
+version: '${version}'
+main: dev.slne.surf.stats.paper.SurfStatsPlugin
+description: Player statistics management system for Surf servers
+api-version: '1.21'
+author: SLNE Dev Team
+
+load: POSTWORLD
+
+permissions:
+  surfstats.admin:
+    description: Administrative access to SurfStats
+    default: op

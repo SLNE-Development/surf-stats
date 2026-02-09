@@ -8,6 +8,7 @@
       <module fileurl="file://$PROJECT_DIR$/.idea/modules/surf-stats-api/surf-stats.surf-stats-api.test.iml" filepath="$PROJECT_DIR$/.idea/modules/surf-stats-api/surf-stats.surf-stats-api.test.iml" />
       <module fileurl="file://$PROJECT_DIR$/.idea/modules/surf-stats-bukkit/surf-stats.surf-stats-bukkit.main.iml" filepath="$PROJECT_DIR$/.idea/modules/surf-stats-bukkit/surf-stats.surf-stats-bukkit.main.iml" />
       <module fileurl="file://$PROJECT_DIR$/.idea/modules/surf-stats-core/surf-stats.surf-stats-core.main.iml" filepath="$PROJECT_DIR$/.idea/modules/surf-stats-core/surf-stats.surf-stats-core.main.iml" />
+      <module fileurl="file://$PROJECT_DIR$/.idea/modules/surf-stats-core/surf-stats.surf-stats-core.test.iml" filepath="$PROJECT_DIR$/.idea/modules/surf-stats-core/surf-stats.surf-stats-core.test.iml" />
       <module fileurl="file://$PROJECT_DIR$/.idea/modules/surf-stats-paper/surf-stats.surf-stats-paper.main.iml" filepath="$PROJECT_DIR$/.idea/modules/surf-stats-paper/surf-stats.surf-stats-paper.main.iml" />
     </modules>
   </component>

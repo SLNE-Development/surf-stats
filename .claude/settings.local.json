@@ -1,7 +1,14 @@
 {
   "permissions": {
     "allow": [
-      "Bash(git ls-tree:*)"
+      "Bash(git ls-tree:*)",
+      "Bash(./gradlew.bat clean compileKotlin compileTestKotlin:*)",
+      "Bash(./gradlew.bat clean compileKotlin:*)",
+      "WebSearch",
+      "Bash(./gradlew.bat compileTestKotlin:*)",
+      "Bash(./gradlew.bat :surf-stats-core:test:*)",
+      "Bash(./gradlew.bat clean:*)",
+      "Bash(./gradlew.bat:*)"
     ]
   }
 }
