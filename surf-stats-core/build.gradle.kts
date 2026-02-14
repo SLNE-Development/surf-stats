@@ -2,11 +2,14 @@ plugins {
     id("dev.slne.surf.surfapi.gradle.core")
 }
 
+surfCoreApi {
+    withSurfDatabaseR2dbc("1.3.0", "libs.database")
+}
+
 dependencies {
     api(project(":surf-stats-api"))
-    api(libs.surf.database.r2dbc)
-    api(libs.kotlinx.serialization.json)
-    api(libs.kotlinx.coroutines.core)
+    compileOnly(libs.kotlinx.serialization.json)
+    compileOnly(libs.kotlinx.coroutines.core)
 
     testImplementation(libs.junit.jupiter)
     testImplementation(libs.kotlinx.coroutines.test)

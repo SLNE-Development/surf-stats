@@ -15,7 +15,7 @@ class StatsDatabaseService(
 
     suspend fun registerServer() {
         suspendTransaction {
-            ServersTable.upsert(ServersTable.name) {
+            ServersTable.upsert {
                 it[name] = serverName
                 it[label] = serverName
             }
@@ -28,7 +28,7 @@ class StatsDatabaseService(
 
         suspendTransaction {
             // Upsert player
-            PlayersTable.upsert(PlayersTable.uuid) {
+            PlayersTable.upsert {
                 it[uuid] = player.uuid
                 it[name] = player.name
                 it[dataVersion] = player.dataVersion
@@ -52,12 +52,7 @@ class StatsDatabaseService(
 
             // Upsert all stat entries
             for (entry in player.stats) {
-                PlayerStatsTable.upsert(
-                    PlayerStatsTable.playerUuid,
-                    PlayerStatsTable.categoryName,
-                    PlayerStatsTable.statKeyName,
-                    PlayerStatsTable.serverName
-                ) {
+                PlayerStatsTable.upsert {
                     it[playerUuid] = player.uuid
                     it[categoryName] = entry.category
                     it[statKeyName] = entry.key

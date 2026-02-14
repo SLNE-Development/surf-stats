@@ -1,9 +1,17 @@
 plugins {
-    id("dev.slne.surf.surfapi.gradle.paper-raw")
+    id("dev.slne.surf.surfapi.gradle.paper-plugin")
+}
+
+surfPaperPluginApi {
+    mainClass("dev.slne.surf.stats.paper.SurfStatsPlugin")
+    authors.add("SLNE Dev Team")
+    generateLibraryLoader(false)
+    foliaSupported(true)
+    withCorePaper()
 }
 
 dependencies {
-    implementation(project(":surf-stats-core"))
+    api(project(":surf-stats-core"))
 }
 
 tasks.processResources {
