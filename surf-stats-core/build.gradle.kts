@@ -6,6 +6,7 @@ dependencies {
     api(project(":surf-stats-api"))
     api(libs.surf.database.r2dbc)
     api(libs.kotlinx.serialization.json)
+    api(libs.kotlinx.coroutines.core)
 
     testImplementation(libs.junit.jupiter)
     testImplementation(libs.kotlinx.coroutines.test)

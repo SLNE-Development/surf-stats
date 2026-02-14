@@ -22,7 +22,7 @@ class ServerShutdownListener(
 
     @EventHandler(priority = EventPriority.MONITOR)
     fun onPluginDisable(event: PluginDisableEvent) {
-        if (event.plugin.name != "SurfStats") return
+        if (event.plugin.name != "surf-stats-paper") return
 
         val onlinePlayers = server.onlinePlayers
         if (onlinePlayers.isEmpty()) {

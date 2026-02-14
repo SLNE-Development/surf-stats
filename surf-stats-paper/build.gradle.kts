@@ -5,3 +5,7 @@ plugins {
 dependencies {
     implementation(project(":surf-stats-core"))
 }
+
+tasks.processResources {
+    expand("version" to project.version)
+}
