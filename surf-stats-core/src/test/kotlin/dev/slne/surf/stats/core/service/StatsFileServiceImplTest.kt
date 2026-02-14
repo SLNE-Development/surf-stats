@@ -4,11 +4,14 @@ import kotlinx.coroutines.test.runTest
 import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.Assertions.*
 import org.junit.jupiter.api.BeforeEach
+import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.io.TempDir
 import java.nio.file.Files
 import java.nio.file.Path
+import java.nio.file.Paths
 import java.util.UUID
+import java.util.stream.Collectors
 
 class StatsFileServiceImplTest {
 
@@ -171,5 +174,119 @@ class StatsFileServiceImplTest {
         assertTrue(categories.contains("minecraft:mined"))
         assertTrue(categories.contains("minecraft:killed"))
         assertTrue(categories.contains("minecraft:custom"))
+    }
+
+    @Nested
+    inner class ResourceFileTests {
+
+        private val resourceStatsDir: Path = Paths.get("src/test/resources/stats")
+        private lateinit var resourceService: StatsFileServiceImpl
+
+        @BeforeEach
+        fun setupResourceService() = runTest {
+            resourceService = StatsFileServiceImpl()
+            resourceService.initialize(resourceStatsDir)
+        }
+
+        private fun resourceUuids(): List<UUID> =
+            Files.list(resourceStatsDir)
+                .filter { it.toString().endsWith(".json") }
+                .map { UUID.fromString(it.fileName.toString().removeSuffix(".json")) }
+                .collect(Collectors.toList())
+
+        @Test
+        fun `should load each resource stats file successfully`() = runTest {
+            val uuids = resourceUuids()
+            assertTrue(uuids.isNotEmpty(), "There should be resource stats files to test")
+
+            for (uuid in uuids) {
+                val result = resourceService.loadStatistics(uuid, "TestPlayer")
+                assertTrue(result.isSuccess, "Failed to load stats for $uuid: ${result.exceptionOrNull()?.message}")
+
+                val stats = result.getOrNull()!!
+                assertEquals(uuid, stats.uuid)
+                assertEquals("TestPlayer", stats.name)
+                assertTrue(stats.dataVersion > 0, "DataVersion should be positive for $uuid")
+                assertTrue(stats.stats.isNotEmpty(), "Stats should not be empty for $uuid")
+            }
+        }
+
+        @Test
+        fun `should produce valid stat entries from resource files`() = runTest {
+            val uuids = resourceUuids()
+
+            for (uuid in uuids) {
+                val stats = resourceService.loadStatistics(uuid, "Player").getOrNull()!!
+
+                stats.stats.forEach { entry ->
+                    assertTrue(entry.category.contains(":"),
+                        "Category '${entry.category}' should be namespaced for $uuid")
+                    assertTrue(entry.key.contains(":"),
+                        "Key '${entry.key}' should be namespaced for $uuid")
+                    assertTrue(entry.value >= 0,
+                        "Stat value should be non-negative for $uuid ${entry.category}/${entry.key}")
+                }
+            }
+        }
+
+        @Test
+        fun `should have at least one category in each resource file`() = runTest {
+            val uuids = resourceUuids()
+
+            for (uuid in uuids) {
+                val stats = resourceService.loadStatistics(uuid, "Player").getOrNull()!!
+                val categories = stats.categories()
+
+                assertTrue(categories.isNotEmpty(),
+                    "Should have at least one category for $uuid")
+            }
+        }
+
+        @Test
+        fun `should correctly report stats existence for resource files`() = runTest {
+            val existingUuid = resourceUuids().first()
+            val nonExistingUuid = UUID.randomUUID()
+
+            assertTrue(resourceService.statsExist(existingUuid))
+            assertFalse(resourceService.statsExist(nonExistingUuid))
+        }
+
+        @Test
+        fun `should batch load all resource files`() = runTest {
+            val players = resourceUuids().associateWith { "Player-$it" }
+
+            val results = resourceService.loadAllStatistics(players)
+
+            assertEquals(players.size, results.size)
+            results.forEach { (uuid, result) ->
+                assertTrue(result.isSuccess, "Batch load failed for $uuid: ${result.exceptionOrNull()?.message}")
+                assertEquals("Player-$uuid", result.getOrNull()?.name)
+            }
+        }
+
+        @Test
+        fun `should support getStat lookup on resource file data`() = runTest {
+            val uuid = resourceUuids().first()
+            val stats = resourceService.loadStatistics(uuid, "Player").getOrNull()!!
+
+            // Pick the first entry and verify getStat returns the same value
+            val firstEntry = stats.stats.first()
+            val lookedUp = stats.getStat(firstEntry.category, firstEntry.key)
+
+            assertNotNull(lookedUp)
+            assertEquals(firstEntry.value, lookedUp)
+        }
+
+        @Test
+        fun `should support getByCategory on resource file data`() = runTest {
+            val uuid = resourceUuids().first()
+            val stats = resourceService.loadStatistics(uuid, "Player").getOrNull()!!
+
+            val firstCategory = stats.categories().first()
+            val categoryStats = stats.getByCategory(firstCategory)
+
+            assertTrue(categoryStats.isNotEmpty())
+            assertTrue(categoryStats.all { it.category == firstCategory })
+        }
     }
 }

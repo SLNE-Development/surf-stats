@@ -8,7 +8,8 @@
       "Bash(./gradlew.bat compileTestKotlin:*)",
       "Bash(./gradlew.bat :surf-stats-core:test:*)",
       "Bash(./gradlew.bat clean:*)",
-      "Bash(./gradlew.bat:*)"
+      "Bash(./gradlew.bat:*)",
+      "Bash(./gradlew :surf-stats-core:test:*)"
     ]
   }
 }
