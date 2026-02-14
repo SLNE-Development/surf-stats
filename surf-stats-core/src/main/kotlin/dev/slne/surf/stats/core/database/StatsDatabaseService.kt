@@ -8,6 +8,7 @@ import dev.slne.surf.database.libs.org.jetbrains.exposed.v1.r2dbc.upsert
 import dev.slne.surf.stats.api.model.PlayerStatsBatch
 import dev.slne.surf.stats.core.database.table.*
 import org.slf4j.LoggerFactory
+import java.util.UUID
 
 class StatsDatabaseService(
     private val serverName: String,
@@ -121,5 +122,42 @@ class StatsDatabaseService(
         }
 
         return failedCount
+    }
+
+    suspend fun saveCustomStats(
+        playerUuid: UUID,
+        playerName: String,
+        stats: Map<String, Long>
+    ) {
+        val category = "minecraft:custom"
+
+        suspendTransaction {
+            PlayersTable.upsert {
+                it[uuid] = playerUuid
+                it[name] = playerName
+                it[updatedAt] = CurrentTimestamp
+            }
+
+            StatCategoriesTable.batchInsert(listOf(category), ignore = true) { cat ->
+                this[StatCategoriesTable.name] = cat
+            }
+
+            StatKeysTable.batchInsert(stats.keys, ignore = true) { key ->
+                this[StatKeysTable.name] = key
+            }
+
+            PlayerStatsTable.batchUpsert(stats.entries.toList()) { (key, value) ->
+                this[PlayerStatsTable.playerUuid] = playerUuid
+                this[PlayerStatsTable.categoryName] = category
+                this[PlayerStatsTable.statKeyName] = key
+                this[PlayerStatsTable.value] = value
+                this[PlayerStatsTable.serverName] = serverName
+            }
+        }
+
+        logger.info(
+            "Saved {} custom stat entries for player {} ({}) on server '{}'",
+            stats.size, playerName, playerUuid, serverName
+        )
     }
 }

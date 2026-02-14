@@ -72,4 +72,14 @@ class SurfStatsApiImpl(
     override suspend fun getPlayerStats(playerUuid: UUID, playerName: String): PlayerStats? {
         return repository.loadStats(playerUuid, playerName)
     }
+
+    override suspend fun saveCustomStat(playerUuid: UUID, playerName: String, key: String, value: Long) {
+        saveCustomStats(playerUuid, playerName, mapOf(key to value))
+    }
+
+    override suspend fun saveCustomStats(playerUuid: UUID, playerName: String, stats: Map<String, Long>) {
+        val db = databaseService
+            ?: throw IllegalStateException("Database service is not available")
+        db.saveCustomStats(playerUuid, playerName, stats)
+    }
 }

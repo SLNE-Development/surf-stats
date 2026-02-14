@@ -90,6 +90,26 @@ val blocksMined = stats?.getStat("minecraft:mined", "minecraft:stone")
 val categories: Set<String> = stats?.categories() ?: emptySet()
 ```
 
+### Custom Stats
+
+Other plugins can save custom statistics into the `minecraft:custom` category:
+
+```kotlin
+val api = server.servicesManager.getRegistration(SurfStatsApi::class.java)?.provider
+    ?: error("SurfStats not available")
+
+// Save a single custom stat
+api.saveCustomStat(playerUuid, playerName, "my_plugin:kills", 42L)
+
+// Save multiple custom stats at once (single transaction)
+api.saveCustomStats(playerUuid, playerName, mapOf(
+    "my_plugin:kills" to 42L,
+    "my_plugin:deaths" to 7L
+))
+```
+
+Both methods are `suspend` functions and must be called from a coroutine context. The database service must be available or an `IllegalStateException` is thrown.
+
 ### Key API Types
 
 - **`SurfStatsApi`** — main entry point for reading and processing stats

@@ -47,6 +47,25 @@ interface SurfStatsApi {
     suspend fun getPlayerStats(playerUuid: UUID, playerName: String): PlayerStats?
 
     /**
+     * Saves a single custom statistic under the `minecraft:custom` category.
+     *
+     * @param playerUuid The player's UUID
+     * @param playerName The player's name
+     * @param key The stat key (e.g. `"my_plugin:kills"`)
+     * @param value The stat value
+     */
+    suspend fun saveCustomStat(playerUuid: UUID, playerName: String, key: String, value: Long)
+
+    /**
+     * Saves multiple custom statistics under the `minecraft:custom` category in a single transaction.
+     *
+     * @param playerUuid The player's UUID
+     * @param playerName The player's name
+     * @param stats Map of stat key to value
+     */
+    suspend fun saveCustomStats(playerUuid: UUID, playerName: String, stats: Map<String, Long>)
+
+    /**
      * Extracts all unique category names from a player's stats.
      * Useful for populating the stat_categories table.
      */
