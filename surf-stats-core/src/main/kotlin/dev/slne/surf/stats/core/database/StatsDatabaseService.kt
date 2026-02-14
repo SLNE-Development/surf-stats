@@ -8,7 +8,8 @@ import dev.slne.surf.stats.core.database.table.*
 import org.slf4j.LoggerFactory
 
 class StatsDatabaseService(
-    private val serverName: String
+    private val serverName: String,
+    private val serverLabel: String
 ) {
 
     private val logger = LoggerFactory.getLogger(StatsDatabaseService::class.java)
@@ -17,7 +18,7 @@ class StatsDatabaseService(
         suspendTransaction {
             ServersTable.upsert {
                 it[name] = serverName
-                it[label] = serverName
+                it[label] = serverLabel
             }
         }
         logger.info("Registered server '{}' in database", serverName)

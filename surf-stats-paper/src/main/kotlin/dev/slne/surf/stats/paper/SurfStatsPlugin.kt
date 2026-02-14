@@ -61,9 +61,14 @@ class SurfStatsPlugin : JavaPlugin() {
         val statsDirectory = mainWorld.worldFolder.toPath().resolve("stats")
         pluginLogger.info("Using stats directory: {}", statsDirectory)
 
-        // Determine server name from server.properties or use folder name
-        val serverName = resolveServerName()
-        pluginLogger.info("Server name: {}", serverName)
+        // Load config
+        saveDefaultConfig()
+        val serverName = config.getString("server.name", "unknown")!!
+        val serverLabel = config.getString("server.label", serverName)!!
+        if (serverName == "my-server") {
+            throw IllegalStateException("Server name is still set to the default value 'my-server'. Please update 'server.name' in config.yml.")
+        }
+        pluginLogger.info("Server name: {}, label: {}", serverName, serverLabel)
 
         // Initialize file service
         fileService = StatsFileServiceImpl()
@@ -74,7 +79,7 @@ class SurfStatsPlugin : JavaPlugin() {
         // Initialize database
         saveResource("database.yml", false)
         databaseApi = DatabaseApi.create(pluginPath = dataFolder.toPath())
-        val databaseService = StatsDatabaseService(serverName)
+        val databaseService = StatsDatabaseService(serverName, serverLabel)
         runBlocking {
             databaseService.registerServer()
         }
@@ -98,13 +103,6 @@ class SurfStatsPlugin : JavaPlugin() {
         )
 
         pluginLogger.info("Services initialized and registered")
-    }
-
-    private fun resolveServerName(): String {
-        // Try to get from server properties, fallback to world folder name
-        return System.getProperty("surf.stats.server.name")
-            ?: server.worlds.firstOrNull()?.name
-            ?: "unknown"
     }
 
     private fun registerListeners() {
