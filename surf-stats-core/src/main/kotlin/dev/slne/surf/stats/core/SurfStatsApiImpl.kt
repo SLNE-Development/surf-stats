@@ -61,7 +61,10 @@ class SurfStatsApiImpl(
             batches.size, players.size, totalEntries
         )
 
-        databaseService?.saveBatches(batches)
+        val failedCount = databaseService?.saveBatches(batches) ?: 0
+        if (failedCount > 0) {
+            logger.warn("Failed to save stats for {}/{} players to database", failedCount, batches.size)
+        }
 
         return batches
     }

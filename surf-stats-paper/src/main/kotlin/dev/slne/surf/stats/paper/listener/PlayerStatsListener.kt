@@ -2,8 +2,6 @@ package dev.slne.surf.stats.paper.listener
 
 import dev.slne.surf.stats.api.SurfStatsApi
 import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import org.bukkit.event.EventHandler
@@ -16,12 +14,11 @@ import org.slf4j.LoggerFactory
  * Listener for player-related statistics events.
  */
 class PlayerStatsListener(
-    private val surfStatsApi: SurfStatsApi
+    private val surfStatsApi: SurfStatsApi,
+    private val scope: CoroutineScope
 ) : Listener {
 
     private val logger = LoggerFactory.getLogger(PlayerStatsListener::class.java)
-
-    private val scope = CoroutineScope(Dispatchers.IO + SupervisorJob())
 
     /**
      * Handles player logout - processes their statistics.

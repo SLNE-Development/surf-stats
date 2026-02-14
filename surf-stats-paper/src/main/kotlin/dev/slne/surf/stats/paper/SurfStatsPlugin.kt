@@ -10,6 +10,9 @@ import dev.slne.surf.stats.core.service.StatsFileServiceImpl
 import dev.slne.surf.stats.paper.listener.PlayerStatsListener
 import dev.slne.surf.stats.paper.listener.ServerShutdownListener
 import dev.slne.surf.stats.paper.listener.WorldSaveListener
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.runBlocking
 import org.bukkit.plugin.ServicePriority
 import org.bukkit.plugin.java.JavaPlugin
@@ -27,6 +30,8 @@ class SurfStatsPlugin : JavaPlugin() {
     private lateinit var surfStatsApi: SurfStatsApi
     private lateinit var databaseApi: DatabaseApi
 
+    private val pluginScope = CoroutineScope(Dispatchers.IO + SupervisorJob())
+
     override fun onEnable() {
         pluginLogger.info("Enabling SurfStats plugin...")
 
@@ -43,7 +48,7 @@ class SurfStatsPlugin : JavaPlugin() {
     override fun onDisable() {
         pluginLogger.info("Disabling SurfStats plugin...")
 
-        // Shutdown database
+        // Shutdown database (PluginDisableEvent has already fired and completed the final save)
         if (::databaseApi.isInitialized) {
             databaseApi.shutdown()
         }
@@ -110,17 +115,17 @@ class SurfStatsPlugin : JavaPlugin() {
         val pluginManager = server.pluginManager
 
         pluginManager.registerEvents(
-            PlayerStatsListener(surfStatsApi),
+            PlayerStatsListener(surfStatsApi, pluginScope),
             this
         )
 
         pluginManager.registerEvents(
-            ServerShutdownListener(surfStatsApi, server),
+            ServerShutdownListener(surfStatsApi, server, pluginScope),
             this
         )
 
         pluginManager.registerEvents(
-            WorldSaveListener(surfStatsApi, server),
+            WorldSaveListener(surfStatsApi, server, pluginScope),
             this
         )
 

@@ -1,6 +1,8 @@
 package dev.slne.surf.stats.core.database
 
-import dev.slne.surf.database.libs.org.jetbrains.exposed.v1.r2dbc.insertIgnore
+import dev.slne.surf.database.libs.org.jetbrains.exposed.v1.javatime.CurrentTimestamp
+import dev.slne.surf.database.libs.org.jetbrains.exposed.v1.r2dbc.batchInsert
+import dev.slne.surf.database.libs.org.jetbrains.exposed.v1.r2dbc.batchUpsert
 import dev.slne.surf.database.libs.org.jetbrains.exposed.v1.r2dbc.transactions.suspendTransaction
 import dev.slne.surf.database.libs.org.jetbrains.exposed.v1.r2dbc.upsert
 import dev.slne.surf.stats.api.model.PlayerStatsBatch
@@ -33,33 +35,29 @@ class StatsDatabaseService(
                 it[uuid] = player.uuid
                 it[name] = player.name
                 it[dataVersion] = player.dataVersion
+                it[updatedAt] = CurrentTimestamp
             }
 
-            // Collect and insert unique categories and keys
+            // Use batch operations instead of individual inserts/upserts for performance.
+            // With 20 players and ~200 entries each, this reduces ~4000 individual queries
+            // to ~20 batch statements.
             val categories = player.stats.map { it.category }.toSet()
             val keys = player.stats.map { it.key }.toSet()
 
-            for (category in categories) {
-                StatCategoriesTable.insertIgnore {
-                    it[name] = category
-                }
+            StatCategoriesTable.batchInsert(categories, ignore = true) { category ->
+                this[StatCategoriesTable.name] = category
             }
 
-            for (key in keys) {
-                StatKeysTable.insertIgnore {
-                    it[name] = key
-                }
+            StatKeysTable.batchInsert(keys, ignore = true) { key ->
+                this[StatKeysTable.name] = key
             }
 
-            // Upsert all stat entries
-            for (entry in player.stats) {
-                PlayerStatsTable.upsert {
-                    it[playerUuid] = player.uuid
-                    it[categoryName] = entry.category
-                    it[statKeyName] = entry.key
-                    it[value] = entry.value
-                    it[serverName] = batch.serverName
-                }
+            PlayerStatsTable.batchUpsert(player.stats) { entry ->
+                this[PlayerStatsTable.playerUuid] = player.uuid
+                this[PlayerStatsTable.categoryName] = entry.category
+                this[PlayerStatsTable.statKeyName] = entry.key
+                this[PlayerStatsTable.value] = entry.value
+                this[PlayerStatsTable.serverName] = batch.serverName
             }
         }
 
@@ -69,16 +67,59 @@ class StatsDatabaseService(
         )
     }
 
-    suspend fun saveBatches(batches: List<PlayerStatsBatch>) {
-        for (batch in batches) {
-            try {
-                saveBatch(batch)
-            } catch (e: Exception) {
-                logger.error(
-                    "Failed to save stats for player {} ({}): {}",
-                    batch.player.name, batch.player.uuid, e.message
-                )
+    /**
+     * Saves multiple batches, wrapping all operations in a single transaction.
+     * Returns the number of batches that failed to save.
+     */
+    suspend fun saveBatches(batches: List<PlayerStatsBatch>): Int {
+        var failedCount = 0
+
+        suspendTransaction {
+            // Collect all unique categories and keys across all batches
+            val allCategories = batches.flatMap { it.player.stats.map { s -> s.category } }.toSet()
+            val allKeys = batches.flatMap { it.player.stats.map { s -> s.key } }.toSet()
+
+            StatCategoriesTable.batchInsert(allCategories, ignore = true) { category ->
+                this[StatCategoriesTable.name] = category
+            }
+
+            StatKeysTable.batchInsert(allKeys, ignore = true) { key ->
+                this[StatKeysTable.name] = key
+            }
+
+            for (batch in batches) {
+                try {
+                    val player = batch.player
+
+                    PlayersTable.upsert {
+                        it[uuid] = player.uuid
+                        it[name] = player.name
+                        it[dataVersion] = player.dataVersion
+                        it[updatedAt] = CurrentTimestamp
+                    }
+
+                    PlayerStatsTable.batchUpsert(player.stats) { entry ->
+                        this[PlayerStatsTable.playerUuid] = player.uuid
+                        this[PlayerStatsTable.categoryName] = entry.category
+                        this[PlayerStatsTable.statKeyName] = entry.key
+                        this[PlayerStatsTable.value] = entry.value
+                        this[PlayerStatsTable.serverName] = batch.serverName
+                    }
+
+                    logger.info(
+                        "Saved {} stat entries for player {} ({}) on server '{}'",
+                        player.stats.size, player.name, player.uuid, batch.serverName
+                    )
+                } catch (e: Exception) {
+                    failedCount++
+                    logger.error(
+                        "Failed to save stats for player {} ({}): {}",
+                        batch.player.name, batch.player.uuid, e.message
+                    )
+                }
             }
         }
+
+        return failedCount
     }
 }

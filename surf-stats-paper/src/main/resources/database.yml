@@ -2,9 +2,9 @@ logLevel: DEBUG
 credentials:
   host: localhost
   port: 3306
-  database: s142_stats
-  username: root
-  password: 1234
+  database: my_database
+  username: my_user
+  password: my_password
 pool:
   sizing:
     initialSize: 10
