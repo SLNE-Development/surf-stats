@@ -4,6 +4,7 @@ import dev.slne.surf.stats.api.SurfStatsApi
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import org.bukkit.event.EventHandler
 import org.bukkit.event.EventPriority
@@ -34,6 +35,8 @@ class PlayerStatsListener(
         logger.debug("Player {} ({}) disconnected, processing stats", name, uuid)
 
         scope.launch {
+            // Wait for Minecraft to flush the stats JSON file to disk before reading it
+            delay(1000)
             val result = surfStatsApi.processPlayerStats(uuid, name)
 
             result.fold(

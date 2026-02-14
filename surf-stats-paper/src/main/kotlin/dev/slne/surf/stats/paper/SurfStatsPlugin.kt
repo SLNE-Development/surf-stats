@@ -9,6 +9,7 @@ import dev.slne.surf.stats.core.repository.PlayerStatsRepositoryImpl
 import dev.slne.surf.stats.core.service.StatsFileServiceImpl
 import dev.slne.surf.stats.paper.listener.PlayerStatsListener
 import dev.slne.surf.stats.paper.listener.ServerShutdownListener
+import dev.slne.surf.stats.paper.listener.WorldSaveListener
 import kotlinx.coroutines.runBlocking
 import org.bukkit.plugin.ServicePriority
 import org.bukkit.plugin.java.JavaPlugin
@@ -115,6 +116,11 @@ class SurfStatsPlugin : JavaPlugin() {
 
         pluginManager.registerEvents(
             ServerShutdownListener(surfStatsApi, server),
+            this
+        )
+
+        pluginManager.registerEvents(
+            WorldSaveListener(surfStatsApi, server),
             this
         )
 
