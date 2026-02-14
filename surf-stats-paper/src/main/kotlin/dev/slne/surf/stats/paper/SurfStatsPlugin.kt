@@ -74,7 +74,10 @@ class SurfStatsPlugin : JavaPlugin() {
         // Initialize database
         saveResource("database.yml", false)
         databaseApi = DatabaseApi.create(dataFolder.toPath(), "surf-stats")
-        val databaseService = StatsDatabaseService()
+        val databaseService = StatsDatabaseService(serverName)
+        runBlocking {
+            databaseService.registerServer()
+        }
 
         // Create repository and API implementation
         val repository = PlayerStatsRepositoryImpl(fileService)

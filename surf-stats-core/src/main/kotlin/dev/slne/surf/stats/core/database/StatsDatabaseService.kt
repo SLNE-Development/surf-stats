@@ -7,9 +7,21 @@ import dev.slne.surf.stats.api.model.PlayerStatsBatch
 import dev.slne.surf.stats.core.database.table.*
 import org.slf4j.LoggerFactory
 
-class StatsDatabaseService {
+class StatsDatabaseService(
+    private val serverName: String
+) {
 
     private val logger = LoggerFactory.getLogger(StatsDatabaseService::class.java)
+
+    suspend fun registerServer() {
+        suspendTransaction {
+            ServersTable.upsert(ServersTable.name) {
+                it[name] = serverName
+                it[label] = serverName
+            }
+        }
+        logger.info("Registered server '{}' in database", serverName)
+    }
 
     suspend fun saveBatch(batch: PlayerStatsBatch) {
         val player = batch.player
@@ -20,12 +32,6 @@ class StatsDatabaseService {
                 it[uuid] = player.uuid
                 it[name] = player.name
                 it[dataVersion] = player.dataVersion
-            }
-
-            // Ensure server exists
-            ServersTable.insertIgnore {
-                it[name] = batch.serverName
-                it[label] = batch.serverName
             }
 
             // Collect and insert unique categories and keys
