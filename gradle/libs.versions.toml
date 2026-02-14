@@ -5,6 +5,7 @@ kotlinx-coroutines = "1.9.0"
 junit = "5.11.3"
 
 [libraries]
+surf-database-r2dbc = { module = "dev.slne.surf:surf-database-r2dbc", version.ref = "surf-database" }
 kotlinx-serialization-json = { module = "org.jetbrains.kotlinx:kotlinx-serialization-json", version.ref = "kotlinx-serialization" }
 kotlinx-coroutines-test = { module = "org.jetbrains.kotlinx:kotlinx-coroutines-test", version.ref = "kotlinx-coroutines" }
 junit-jupiter = { module = "org.junit.jupiter:junit-jupiter", version.ref = "junit" }

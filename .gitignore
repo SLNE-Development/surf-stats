@@ -27,3 +27,6 @@ gradle-app.setting
 
 # AI
 .claude
+
+# IDE
+.idea

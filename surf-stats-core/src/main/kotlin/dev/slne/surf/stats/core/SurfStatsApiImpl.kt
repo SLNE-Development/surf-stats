@@ -4,6 +4,7 @@ import dev.slne.surf.stats.api.SurfStatsApi
 import dev.slne.surf.stats.api.model.PlayerStats
 import dev.slne.surf.stats.api.model.PlayerStatsBatch
 import dev.slne.surf.stats.api.repository.PlayerStatsRepository
+import dev.slne.surf.stats.core.database.StatsDatabaseService
 import org.slf4j.LoggerFactory
 import java.util.UUID
 
@@ -12,7 +13,8 @@ import java.util.UUID
  */
 class SurfStatsApiImpl(
     private val repository: PlayerStatsRepository,
-    override val serverName: String
+    override val serverName: String,
+    private val databaseService: StatsDatabaseService? = null
 ) : SurfStatsApi {
 
     private val logger = LoggerFactory.getLogger(SurfStatsApiImpl::class.java)
@@ -33,6 +35,8 @@ class SurfStatsApiImpl(
                 "Processed stats for player {} ({}): {} entries, {} categories, dataVersion={}",
                 playerName, playerUuid, stats.stats.size, stats.categories().size, stats.dataVersion
             )
+
+            databaseService?.saveBatch(batch)
 
             batch
         }.onFailure { error ->
@@ -56,6 +60,8 @@ class SurfStatsApiImpl(
             "Processed stats for {}/{} players: {} total entries",
             batches.size, players.size, totalEntries
         )
+
+        databaseService?.saveBatches(batches)
 
         return batches
     }

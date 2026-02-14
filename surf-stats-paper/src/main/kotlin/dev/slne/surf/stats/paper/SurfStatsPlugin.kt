@@ -1,8 +1,10 @@
 package dev.slne.surf.stats.paper
 
+import dev.slne.surf.database.DatabaseApi
 import dev.slne.surf.stats.api.SurfStatsApi
 import dev.slne.surf.stats.api.service.StatsFileService
 import dev.slne.surf.stats.core.SurfStatsApiImpl
+import dev.slne.surf.stats.core.database.StatsDatabaseService
 import dev.slne.surf.stats.core.repository.PlayerStatsRepositoryImpl
 import dev.slne.surf.stats.core.service.StatsFileServiceImpl
 import dev.slne.surf.stats.paper.listener.PlayerStatsListener
@@ -22,6 +24,7 @@ class SurfStatsPlugin : JavaPlugin() {
 
     private lateinit var fileService: StatsFileService
     private lateinit var surfStatsApi: SurfStatsApi
+    private lateinit var databaseApi: DatabaseApi
 
     override fun onEnable() {
         pluginLogger.info("Enabling SurfStats plugin...")
@@ -44,6 +47,11 @@ class SurfStatsPlugin : JavaPlugin() {
             runBlocking {
                 processAllOnlinePlayerStats()
             }
+        }
+
+        // Shutdown database
+        if (::databaseApi.isInitialized) {
+            databaseApi.shutdown()
         }
 
         // Unregister services
@@ -70,9 +78,13 @@ class SurfStatsPlugin : JavaPlugin() {
             fileService.initialize(statsDirectory)
         }
 
+        // Initialize database
+        databaseApi = DatabaseApi.create(dataFolder.toPath(), "surf-stats")
+        val databaseService = StatsDatabaseService()
+
         // Create repository and API implementation
         val repository = PlayerStatsRepositoryImpl(fileService)
-        surfStatsApi = SurfStatsApiImpl(repository, serverName)
+        surfStatsApi = SurfStatsApiImpl(repository, serverName, databaseService)
 
         // Register services using Bukkit's ServicesManager
         server.servicesManager.register(

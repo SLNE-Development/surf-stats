@@ -4,6 +4,7 @@ plugins {
 
 dependencies {
     api(project(":surf-stats-api"))
+    api(libs.surf.database.r2dbc)
     api(libs.kotlinx.serialization.json)
 
     testImplementation(libs.junit.jupiter)
