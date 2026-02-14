@@ -12,6 +12,7 @@ dependencies {
     compileOnly(libs.kotlinx.coroutines.core)
 
     testImplementation(libs.junit.jupiter)
+    testImplementation(libs.kotlinx.serialization.json)
     testImplementation(libs.kotlinx.coroutines.test)
     testRuntimeOnly("org.junit.platform:junit-platform-launcher")
 }
