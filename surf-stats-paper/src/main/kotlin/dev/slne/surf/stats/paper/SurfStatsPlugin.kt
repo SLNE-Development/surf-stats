@@ -42,13 +42,6 @@ class SurfStatsPlugin : JavaPlugin() {
     override fun onDisable() {
         pluginLogger.info("Disabling SurfStats plugin...")
 
-        // Process stats for all online players on shutdown
-        if (::surfStatsApi.isInitialized) {
-            runBlocking {
-                processAllOnlinePlayerStats()
-            }
-        }
-
         // Shutdown database
         if (::databaseApi.isInitialized) {
             databaseApi.shutdown()
@@ -79,6 +72,7 @@ class SurfStatsPlugin : JavaPlugin() {
         }
 
         // Initialize database
+        saveResource("database.yml", false)
         databaseApi = DatabaseApi.create(dataFolder.toPath(), "surf-stats")
         val databaseService = StatsDatabaseService()
 
@@ -124,23 +118,5 @@ class SurfStatsPlugin : JavaPlugin() {
         )
 
         pluginLogger.info("Event listeners registered")
-    }
-
-    private suspend fun processAllOnlinePlayerStats() {
-        val onlinePlayers = server.onlinePlayers
-        if (onlinePlayers.isEmpty()) {
-            pluginLogger.info("No online players to process on shutdown")
-            return
-        }
-
-        pluginLogger.info("Processing stats for {} online players on shutdown", onlinePlayers.size)
-
-        val players = onlinePlayers.associate { it.uniqueId to it.name }
-        val processed = surfStatsApi.processAllPlayerStats(players)
-
-        pluginLogger.info(
-            "Processed stats for {}/{} players on shutdown",
-            processed.size, onlinePlayers.size
-        )
     }
 }
