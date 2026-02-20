@@ -17,10 +17,7 @@ val surfStatsApi = requiredService<SurfStatsApi>()
  * ```
  */
 interface SurfStatsApi {
-    /**
-     * The server name used for stats attribution.
-     */
-    val serverName: String
+
 
     /**
      * Processes statistics for a player (e.g., on logout).

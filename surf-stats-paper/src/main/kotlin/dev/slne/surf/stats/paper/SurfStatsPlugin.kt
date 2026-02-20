@@ -21,6 +21,8 @@ class SurfStatsPlugin : SuspendingJavaPlugin() {
 
     private val pluginLogger = LoggerFactory.getLogger(SurfStatsPlugin::class.java)
 
+    lateinit var serverName: String
+
     lateinit var databaseApi: DatabaseApi
     lateinit var databaseService: StatsDatabaseService
 
@@ -61,7 +63,7 @@ class SurfStatsPlugin : SuspendingJavaPlugin() {
 
         // Load config
         saveDefaultConfig()
-        val serverName = config.getString("server.name", "unknown")!!
+        serverName = config.getString("server.name", "unknown")!!
         val serverLabel = config.getString("server.label", serverName)!!
         if (serverName == "my-server") {
             throw IllegalStateException("Server name is still set to the default value 'my-server'. Please update 'server.name' in config.yml.")

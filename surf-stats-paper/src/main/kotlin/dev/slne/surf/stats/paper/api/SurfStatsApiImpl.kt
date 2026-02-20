@@ -16,9 +16,7 @@ import java.util.UUID
  * Implementation of the main SurfStats API.
  */
 @AutoService(SurfStatsApi::class)
-class SurfStatsApiImpl(
-    override val serverName: String,
-) : SurfStatsApi, Services.Fallback {
+class SurfStatsApiImpl() : SurfStatsApi, Services.Fallback {
 
     private val logger = LoggerFactory.getLogger(SurfStatsApiImpl::class.java)
 
@@ -31,7 +29,7 @@ class SurfStatsApiImpl(
 
             val batch = PlayerStatsBatch(
                 player = stats,
-                serverName = serverName
+                serverName = plugin.serverName
             )
 
             logger.info(
@@ -48,13 +46,13 @@ class SurfStatsApiImpl(
     }
 
     override suspend fun processAllPlayerStats(players: Map<UUID, String>): List<PlayerStatsBatch> {
-        logger.info("Processing stats for {} players on server '{}'", players.size, serverName)
+        logger.info("Processing stats for {} players on server '{}'", players.size, plugin.serverName)
 
         val statsList = playerStatsRepository.loadAllStats(players)
         val batches = statsList.map { stats ->
             PlayerStatsBatch(
                 player = stats,
-                serverName = serverName
+                serverName = plugin.serverName
             )
         }
 
@@ -64,7 +62,7 @@ class SurfStatsApiImpl(
             batches.size, players.size, totalEntries
         )
 
-        val failedCount = plugin.databaseService.saveBatches(batches) ?: 0
+        val failedCount = plugin.databaseService.saveBatches(batches)
         if (failedCount > 0) {
             logger.warn("Failed to save stats for {}/{} players to database", failedCount, batches.size)
         }
