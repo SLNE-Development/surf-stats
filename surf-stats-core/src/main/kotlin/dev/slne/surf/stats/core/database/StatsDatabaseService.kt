@@ -132,9 +132,10 @@ class StatsDatabaseService(
         val category = "minecraft:custom"
 
         suspendTransaction {
-            PlayersTable.upsert {
+            PlayersTable.upsert(onUpdateExclude = listOf(PlayersTable.dataVersion)) {
                 it[uuid] = playerUuid
                 it[name] = playerName
+                it[dataVersion] = 0
                 it[updatedAt] = CurrentTimestamp
             }
 
