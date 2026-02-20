@@ -1,10 +1,10 @@
 package dev.slne.surf.stats.paper.listener
 
-import dev.slne.surf.stats.api.SurfStatsApi
-import kotlinx.coroutines.CoroutineScope
+import com.github.shynixn.mccoroutine.folia.launch
+import dev.slne.surf.stats.api.surfStatsApi
+import dev.slne.surf.stats.paper.plugin
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
-import kotlinx.coroutines.launch
 import org.bukkit.Server
 import org.bukkit.event.EventHandler
 import org.bukkit.event.EventPriority
@@ -14,9 +14,7 @@ import org.slf4j.LoggerFactory
 import java.util.UUID
 
 class WorldSaveListener(
-    private val surfStatsApi: SurfStatsApi,
     private val server: Server,
-    private val scope: CoroutineScope
 ) : Listener {
 
     private val logger = LoggerFactory.getLogger(WorldSaveListener::class.java)
@@ -34,7 +32,7 @@ class WorldSaveListener(
         if (players.isEmpty()) return
 
         saveJob?.cancel()
-        saveJob = scope.launch {
+        saveJob = plugin.launch {
             delay(5000)
 
             logger.info("Processing stats for {} online players after world save", players.size)

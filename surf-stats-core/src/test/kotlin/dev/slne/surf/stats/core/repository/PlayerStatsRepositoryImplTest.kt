@@ -1,38 +1,38 @@
 package dev.slne.surf.stats.core.repository
 
-import dev.slne.surf.stats.api.model.PlayerStats
-import dev.slne.surf.stats.api.model.StatEntry
-import dev.slne.surf.stats.api.service.StatsFileService
+import dev.slne.surf.stats.api.service.fileService
 import kotlinx.coroutines.test.runTest
 import org.junit.jupiter.api.Assertions.*
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
+import org.junit.jupiter.api.io.TempDir
+import java.nio.file.Files
 import java.nio.file.Path
 import java.util.UUID
 
 class PlayerStatsRepositoryImplTest {
 
+    @TempDir
+    lateinit var tempDir: Path
+
     private lateinit var repository: PlayerStatsRepositoryImpl
-    private lateinit var mockFileService: MockStatsFileService
+    private lateinit var statsDir: Path
+
+    private val simpleStatsJson =
+        """{"stats": {"minecraft:mined": {"minecraft:stone": 100}}, "DataVersion": 3953}"""
 
     @BeforeEach
-    fun setup() {
-        mockFileService = MockStatsFileService()
-        repository = PlayerStatsRepositoryImpl(mockFileService)
+    fun setup() = runTest {
+        statsDir = tempDir.resolve("stats")
+        Files.createDirectories(statsDir)
+        fileService.initialize(statsDir)
+        repository = PlayerStatsRepositoryImpl()
     }
 
     @Test
     fun `should load stats for existing player`() = runTest {
         val uuid = UUID.randomUUID()
-        val expectedStats = PlayerStats(
-            uuid = uuid,
-            name = "TestPlayer",
-            dataVersion = 3953,
-            stats = listOf(
-                StatEntry("minecraft:mined", "minecraft:stone", 100L)
-            )
-        )
-        mockFileService.addStats(uuid, expectedStats)
+        Files.writeString(statsDir.resolve("$uuid.json"), simpleStatsJson)
 
         val result = repository.loadStats(uuid, "TestPlayer")
 
@@ -58,9 +58,9 @@ class PlayerStatsRepositoryImplTest {
         val uuid2 = UUID.randomUUID()
         val uuid3 = UUID.randomUUID()
 
-        mockFileService.addStats(uuid1, PlayerStats(uuid1, "Player1", 3953, emptyList()))
-        mockFileService.addStats(uuid2, PlayerStats(uuid2, "Player2", 3953, emptyList()))
-        // uuid3 intentionally not added
+        Files.writeString(statsDir.resolve("$uuid1.json"), simpleStatsJson)
+        Files.writeString(statsDir.resolve("$uuid2.json"), simpleStatsJson)
+        // uuid3 intentionally has no file
 
         val players = mapOf(
             uuid1 to "Player1",
@@ -80,7 +80,7 @@ class PlayerStatsRepositoryImplTest {
         val existingUuid = UUID.randomUUID()
         val nonExistingUuid = UUID.randomUUID()
 
-        mockFileService.addStats(existingUuid, PlayerStats(existingUuid, "Player", 3953, emptyList()))
+        Files.writeString(statsDir.resolve("$existingUuid.json"), simpleStatsJson)
 
         assertTrue(repository.statsExist(existingUuid))
         assertFalse(repository.statsExist(nonExistingUuid))
@@ -89,67 +89,24 @@ class PlayerStatsRepositoryImplTest {
     @Test
     fun `should preserve stat entries structure`() = runTest {
         val uuid = UUID.randomUUID()
-        val entries = listOf(
-            StatEntry("minecraft:mined", "minecraft:stone", 100L),
-            StatEntry("minecraft:mined", "minecraft:dirt", 50L),
-            StatEntry("minecraft:killed", "minecraft:zombie", 25L)
+        Files.writeString(
+            statsDir.resolve("$uuid.json"), """
+            {
+                "stats": {
+                    "minecraft:mined": {"minecraft:stone": 100, "minecraft:dirt": 50},
+                    "minecraft:killed": {"minecraft:zombie": 25}
+                },
+                "DataVersion": 3953
+            }
+        """.trimIndent()
         )
-        val expectedStats = PlayerStats(uuid, "TestPlayer", 3953, entries)
-        mockFileService.addStats(uuid, expectedStats)
 
         val result = repository.loadStats(uuid, "TestPlayer")
 
         assertNotNull(result)
         assertEquals(3, result?.stats?.size)
         assertEquals(2, result?.categories()?.size)
-
-        // Verify specific stat lookup
         assertEquals(100L, result?.getStat("minecraft:mined", "minecraft:stone"))
         assertEquals(25L, result?.getStat("minecraft:killed", "minecraft:zombie"))
-    }
-}
-
-/**
- * Mock implementation of StatsFileService for testing.
- */
-private class MockStatsFileService : StatsFileService {
-
-    private val statsMap = mutableMapOf<UUID, PlayerStats>()
-
-    fun addStats(uuid: UUID, stats: PlayerStats) {
-        statsMap[uuid] = stats
-    }
-
-    override suspend fun initialize(statsDirectory: Path) {
-        // No-op for mock
-    }
-
-    override suspend fun loadStatistics(playerUuid: UUID): Result<PlayerStats> {
-        return statsMap[playerUuid]?.let { Result.success(it) }
-            ?: Result.failure(NoSuchElementException("Stats not found for $playerUuid"))
-    }
-
-    override suspend fun loadStatistics(playerUuid: UUID, playerName: String): Result<PlayerStats> {
-        return statsMap[playerUuid]?.let {
-            Result.success(it.copy(name = playerName))
-        } ?: Result.failure(NoSuchElementException("Stats not found for $playerUuid"))
-    }
-
-    override suspend fun loadAllStatistics(playerUuids: Set<UUID>): Map<UUID, Result<PlayerStats>> {
-        return playerUuids.associateWith { uuid -> loadStatistics(uuid) }
-    }
-
-    override suspend fun loadAllStatistics(players: Map<UUID, String>): Map<UUID, Result<PlayerStats>> {
-        return players.map { (uuid, name) ->
-            uuid to loadStatistics(uuid, name)
-        }.toMap()
-    }
-
-    override fun getStatsFilePath(playerUuid: UUID): Path {
-        return Path.of("mock/stats/$playerUuid.json")
-    }
-
-    override suspend fun statsExist(playerUuid: UUID): Boolean {
-        return statsMap.containsKey(playerUuid)
     }
 }

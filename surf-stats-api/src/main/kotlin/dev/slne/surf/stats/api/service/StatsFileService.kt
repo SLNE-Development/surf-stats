@@ -1,8 +1,11 @@
 package dev.slne.surf.stats.api.service
 
 import dev.slne.surf.stats.api.model.PlayerStats
+import dev.slne.surf.surfapi.core.api.util.requiredService
 import java.nio.file.Path
 import java.util.UUID
+
+val fileService = requiredService<StatsFileService>()
 
 /**
  * Service interface for file-based statistics operations.

@@ -1,8 +1,6 @@
 package dev.slne.surf.stats.paper.listener
 
-import dev.slne.surf.stats.api.SurfStatsApi
-import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.cancel
+import dev.slne.surf.stats.api.surfStatsApi
 import kotlinx.coroutines.runBlocking
 import org.bukkit.Server
 import org.bukkit.event.EventHandler
@@ -16,9 +14,7 @@ import org.slf4j.LoggerFactory
  * Processes all online players' stats when the plugin is disabled.
  */
 class ServerShutdownListener(
-    private val surfStatsApi: SurfStatsApi,
-    private val server: Server,
-    private val pluginScope: CoroutineScope
+    private val server: Server
 ) : Listener {
 
     private val logger = LoggerFactory.getLogger(ServerShutdownListener::class.java)
@@ -27,9 +23,6 @@ class ServerShutdownListener(
     fun onPluginDisable(event: PluginDisableEvent) {
         if (event.plugin.name != "surf-stats-paper") return
 
-        // Cancel shared scope to kill any in-flight async coroutines (quit/world-save)
-        // before performing the synchronous shutdown save
-        pluginScope.cancel("Plugin disabling")
 
         val onlinePlayers = server.onlinePlayers
         if (onlinePlayers.isEmpty()) {

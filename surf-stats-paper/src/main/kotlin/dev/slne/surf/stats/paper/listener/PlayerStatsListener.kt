@@ -1,9 +1,9 @@
 package dev.slne.surf.stats.paper.listener
 
-import dev.slne.surf.stats.api.SurfStatsApi
-import kotlinx.coroutines.CoroutineScope
+import com.github.shynixn.mccoroutine.folia.launch
+import dev.slne.surf.stats.api.surfStatsApi
+import dev.slne.surf.stats.paper.plugin
 import kotlinx.coroutines.delay
-import kotlinx.coroutines.launch
 import org.bukkit.event.EventHandler
 import org.bukkit.event.EventPriority
 import org.bukkit.event.Listener
@@ -13,10 +13,7 @@ import org.slf4j.LoggerFactory
 /**
  * Listener for player-related statistics events.
  */
-class PlayerStatsListener(
-    private val surfStatsApi: SurfStatsApi,
-    private val scope: CoroutineScope
-) : Listener {
+class PlayerStatsListener() : Listener {
 
     private val logger = LoggerFactory.getLogger(PlayerStatsListener::class.java)
 
@@ -31,7 +28,7 @@ class PlayerStatsListener(
 
         logger.debug("Player {} ({}) disconnected, processing stats", name, uuid)
 
-        scope.launch {
+        plugin.launch {
             // Wait for Minecraft to flush the stats JSON file to disk before reading it
             delay(1000)
             val result = surfStatsApi.processPlayerStats(uuid, name)

@@ -1,17 +1,19 @@
 package dev.slne.surf.stats.core.repository
 
+import com.google.auto.service.AutoService
 import dev.slne.surf.stats.api.model.PlayerStats
 import dev.slne.surf.stats.api.repository.PlayerStatsRepository
 import dev.slne.surf.stats.api.service.StatsFileService
+import dev.slne.surf.stats.api.service.fileService
+import net.kyori.adventure.util.Services
 import org.slf4j.LoggerFactory
 import java.util.UUID
 
 /**
  * Implementation of PlayerStatsRepository that delegates to StatsFileService.
  */
-class PlayerStatsRepositoryImpl(
-    private val fileService: StatsFileService
-) : PlayerStatsRepository {
+@AutoService(PlayerStatsRepository::class)
+class PlayerStatsRepositoryImpl() : PlayerStatsRepository, Services.Fallback {
 
     private val logger = LoggerFactory.getLogger(PlayerStatsRepositoryImpl::class.java)
 

@@ -1,21 +1,24 @@
-package dev.slne.surf.stats.core
+package dev.slne.surf.stats.paper.api
 
+import com.google.auto.service.AutoService
 import dev.slne.surf.stats.api.SurfStatsApi
 import dev.slne.surf.stats.api.model.PlayerStats
 import dev.slne.surf.stats.api.model.PlayerStatsBatch
-import dev.slne.surf.stats.api.repository.PlayerStatsRepository
+import dev.slne.surf.stats.api.repository.playerStatsRepository
 import dev.slne.surf.stats.core.database.StatsDatabaseService
+import dev.slne.surf.stats.paper.SurfStatsPlugin
+import dev.slne.surf.stats.paper.plugin
+import net.kyori.adventure.util.Services
 import org.slf4j.LoggerFactory
 import java.util.UUID
 
 /**
  * Implementation of the main SurfStats API.
  */
+@AutoService(SurfStatsApi::class)
 class SurfStatsApiImpl(
-    private val repository: PlayerStatsRepository,
     override val serverName: String,
-    private val databaseService: StatsDatabaseService? = null
-) : SurfStatsApi {
+) : SurfStatsApi, Services.Fallback {
 
     private val logger = LoggerFactory.getLogger(SurfStatsApiImpl::class.java)
 
@@ -23,7 +26,7 @@ class SurfStatsApiImpl(
         logger.debug("Processing stats for player: {} ({})", playerName, playerUuid)
 
         return runCatching {
-            val stats = repository.loadStats(playerUuid, playerName)
+            val stats = playerStatsRepository.loadStats(playerUuid, playerName)
                 ?: throw NoSuchElementException("No stats found for player: $playerName ($playerUuid)")
 
             val batch = PlayerStatsBatch(
@@ -36,7 +39,7 @@ class SurfStatsApiImpl(
                 playerName, playerUuid, stats.stats.size, stats.categories().size, stats.dataVersion
             )
 
-            databaseService?.saveBatch(batch)
+            plugin.databaseService.saveBatch(batch)
 
             batch
         }.onFailure { error ->
@@ -47,7 +50,7 @@ class SurfStatsApiImpl(
     override suspend fun processAllPlayerStats(players: Map<UUID, String>): List<PlayerStatsBatch> {
         logger.info("Processing stats for {} players on server '{}'", players.size, serverName)
 
-        val statsList = repository.loadAllStats(players)
+        val statsList = playerStatsRepository.loadAllStats(players)
         val batches = statsList.map { stats ->
             PlayerStatsBatch(
                 player = stats,
@@ -61,7 +64,7 @@ class SurfStatsApiImpl(
             batches.size, players.size, totalEntries
         )
 
-        val failedCount = databaseService?.saveBatches(batches) ?: 0
+        val failedCount = plugin.databaseService.saveBatches(batches) ?: 0
         if (failedCount > 0) {
             logger.warn("Failed to save stats for {}/{} players to database", failedCount, batches.size)
         }
@@ -70,7 +73,7 @@ class SurfStatsApiImpl(
     }
 
     override suspend fun getPlayerStats(playerUuid: UUID, playerName: String): PlayerStats? {
-        return repository.loadStats(playerUuid, playerName)
+        return playerStatsRepository.loadStats(playerUuid, playerName)
     }
 
     override suspend fun saveCustomStat(playerUuid: UUID, playerName: String, key: String, value: Long) {
@@ -78,8 +81,6 @@ class SurfStatsApiImpl(
     }
 
     override suspend fun saveCustomStats(playerUuid: UUID, playerName: String, stats: Map<String, Long>) {
-        val db = databaseService
-            ?: throw IllegalStateException("Database service is not available")
-        db.saveCustomStats(playerUuid, playerName, stats)
+        plugin.databaseService.saveCustomStats(playerUuid, playerName, stats)
     }
 }

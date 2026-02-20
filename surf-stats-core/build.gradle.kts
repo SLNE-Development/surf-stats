@@ -14,6 +14,7 @@ dependencies {
     testImplementation(libs.junit.jupiter)
     testImplementation(libs.kotlinx.serialization.json)
     testImplementation(libs.kotlinx.coroutines.test)
+    testImplementation("net.kyori:adventure-api:4.26.1")
     testRuntimeOnly("org.junit.platform:junit-platform-launcher")
 }
 

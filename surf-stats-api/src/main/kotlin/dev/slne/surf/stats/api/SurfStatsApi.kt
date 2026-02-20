@@ -2,7 +2,10 @@ package dev.slne.surf.stats.api
 
 import dev.slne.surf.stats.api.model.PlayerStats
 import dev.slne.surf.stats.api.model.PlayerStatsBatch
+import dev.slne.surf.surfapi.core.api.util.requiredService
 import java.util.UUID
+
+val surfStatsApi = requiredService<SurfStatsApi>()
 
 /**
  * Main API interface for the Surf Stats system.

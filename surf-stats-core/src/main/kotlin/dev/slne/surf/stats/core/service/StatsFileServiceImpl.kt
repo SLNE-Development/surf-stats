@@ -1,8 +1,10 @@
 package dev.slne.surf.stats.core.service
 
+import com.google.auto.service.AutoService
 import dev.slne.surf.stats.api.model.PlayerStats
 import dev.slne.surf.stats.api.service.StatsFileService
 import dev.slne.surf.stats.core.json.StatsJsonModel
+import net.kyori.adventure.util.Services
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.async
 import kotlinx.coroutines.awaitAll
@@ -19,7 +21,8 @@ import kotlin.io.path.readText
 /**
  * Implementation of StatsFileService that reads player statistics from JSON files.
  */
-class StatsFileServiceImpl : StatsFileService {
+@AutoService(StatsFileService::class)
+class StatsFileServiceImpl : StatsFileService, Services.Fallback {
 
     private val logger = LoggerFactory.getLogger(StatsFileServiceImpl::class.java)
 
