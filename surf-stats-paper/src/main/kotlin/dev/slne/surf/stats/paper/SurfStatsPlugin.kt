@@ -28,7 +28,6 @@ class SurfStatsPlugin : SuspendingJavaPlugin() {
 
     override fun onEnable() {
         pluginLogger.info("Enabling SurfStats plugin...")
-
         try {
             initializeServices()
             registerListeners()

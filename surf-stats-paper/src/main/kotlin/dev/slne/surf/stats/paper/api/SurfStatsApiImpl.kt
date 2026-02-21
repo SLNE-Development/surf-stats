@@ -5,8 +5,6 @@ import dev.slne.surf.stats.api.SurfStatsApi
 import dev.slne.surf.stats.api.model.PlayerStats
 import dev.slne.surf.stats.api.model.PlayerStatsBatch
 import dev.slne.surf.stats.api.repository.playerStatsRepository
-import dev.slne.surf.stats.core.database.StatsDatabaseService
-import dev.slne.surf.stats.paper.SurfStatsPlugin
 import dev.slne.surf.stats.paper.plugin
 import net.kyori.adventure.util.Services
 import org.slf4j.LoggerFactory
@@ -21,8 +19,6 @@ class SurfStatsApiImpl() : SurfStatsApi, Services.Fallback {
     private val logger = LoggerFactory.getLogger(SurfStatsApiImpl::class.java)
 
     override suspend fun processPlayerStats(playerUuid: UUID, playerName: String): Result<PlayerStatsBatch> {
-        logger.debug("Processing stats for player: {} ({})", playerName, playerUuid)
-
         return runCatching {
             val stats = playerStatsRepository.loadStats(playerUuid, playerName)
                 ?: throw NoSuchElementException("No stats found for player: $playerName ($playerUuid)")
@@ -30,11 +26,6 @@ class SurfStatsApiImpl() : SurfStatsApi, Services.Fallback {
             val batch = PlayerStatsBatch(
                 player = stats,
                 serverName = plugin.serverName
-            )
-
-            logger.info(
-                "Processed stats for player {} ({}): {} entries, {} categories, dataVersion={}",
-                playerName, playerUuid, stats.stats.size, stats.categories().size, stats.dataVersion
             )
 
             plugin.databaseService.saveBatch(batch)
@@ -46,8 +37,6 @@ class SurfStatsApiImpl() : SurfStatsApi, Services.Fallback {
     }
 
     override suspend fun processAllPlayerStats(players: Map<UUID, String>): List<PlayerStatsBatch> {
-        logger.info("Processing stats for {} players on server '{}'", players.size, plugin.serverName)
-
         val statsList = playerStatsRepository.loadAllStats(players)
         val batches = statsList.map { stats ->
             PlayerStatsBatch(
@@ -55,12 +44,6 @@ class SurfStatsApiImpl() : SurfStatsApi, Services.Fallback {
                 serverName = plugin.serverName
             )
         }
-
-        val totalEntries = batches.sumOf { it.player.stats.size }
-        logger.info(
-            "Processed stats for {}/{} players: {} total entries",
-            batches.size, players.size, totalEntries
-        )
 
         val failedCount = plugin.databaseService.saveBatches(batches)
         if (failedCount > 0) {

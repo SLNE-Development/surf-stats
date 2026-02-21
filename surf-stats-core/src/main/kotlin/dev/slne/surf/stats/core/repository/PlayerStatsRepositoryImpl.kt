@@ -3,7 +3,6 @@ package dev.slne.surf.stats.core.repository
 import com.google.auto.service.AutoService
 import dev.slne.surf.stats.api.model.PlayerStats
 import dev.slne.surf.stats.api.repository.PlayerStatsRepository
-import dev.slne.surf.stats.api.service.StatsFileService
 import dev.slne.surf.stats.api.service.fileService
 import net.kyori.adventure.util.Services
 import org.slf4j.LoggerFactory
@@ -47,7 +46,6 @@ class PlayerStatsRepositoryImpl() : PlayerStatsRepository, Services.Fallback {
             logger.warn("Failed to load stats for {} players: {}", failed.size, failed)
         }
 
-        logger.info("Loaded stats for {}/{} players", successful.size, results.size)
         return successful
     }
 }

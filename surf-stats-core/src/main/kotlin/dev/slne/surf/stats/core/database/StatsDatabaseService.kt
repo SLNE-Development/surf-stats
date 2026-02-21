@@ -24,7 +24,6 @@ class StatsDatabaseService(
                 it[label] = serverLabel
             }
         }
-        logger.info("Registered server '{}' in database", serverName)
     }
 
     suspend fun saveBatch(batch: PlayerStatsBatch) {
@@ -61,11 +60,6 @@ class StatsDatabaseService(
                 this[PlayerStatsTable.serverName] = batch.serverName
             }
         }
-
-        logger.info(
-            "Saved {} stat entries for player {} ({}) on server '{}'",
-            player.stats.size, player.name, player.uuid, batch.serverName
-        )
     }
 
     /**
@@ -106,11 +100,6 @@ class StatsDatabaseService(
                         this[PlayerStatsTable.value] = entry.value
                         this[PlayerStatsTable.serverName] = batch.serverName
                     }
-
-                    logger.info(
-                        "Saved {} stat entries for player {} ({}) on server '{}'",
-                        player.stats.size, player.name, player.uuid, batch.serverName
-                    )
                 } catch (e: Exception) {
                     failedCount++
                     logger.error(
@@ -155,10 +144,5 @@ class StatsDatabaseService(
                 this[PlayerStatsTable.serverName] = serverName
             }
         }
-
-        logger.info(
-            "Saved {} custom stat entries for player {} ({}) on server '{}'",
-            stats.size, playerName, playerUuid, serverName
-        )
     }
 }

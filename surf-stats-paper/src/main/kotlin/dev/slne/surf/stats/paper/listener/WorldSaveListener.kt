@@ -10,14 +10,11 @@ import org.bukkit.event.EventHandler
 import org.bukkit.event.EventPriority
 import org.bukkit.event.Listener
 import org.bukkit.event.world.WorldSaveEvent
-import org.slf4j.LoggerFactory
 import java.util.UUID
 
 class WorldSaveListener(
     private val server: Server,
 ) : Listener {
-
-    private val logger = LoggerFactory.getLogger(WorldSaveListener::class.java)
 
     // WorldSaveEvent fires once per world (overworld, nether, end), so multiple events
     // arrive in quick succession. We debounce by cancelling any pending job on each event,
@@ -35,14 +32,7 @@ class WorldSaveListener(
         saveJob = plugin.launch {
             delay(5000)
 
-            logger.info("Processing stats for {} online players after world save", players.size)
-
             val processed = surfStatsApi.processAllPlayerStats(players)
-
-            logger.info(
-                "Processed stats for {}/{} players on world save",
-                processed.size, players.size
-            )
         }
     }
 }

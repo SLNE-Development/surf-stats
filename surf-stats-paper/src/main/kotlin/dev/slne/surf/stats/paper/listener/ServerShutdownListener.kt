@@ -26,20 +26,13 @@ class ServerShutdownListener(
 
         val onlinePlayers = server.onlinePlayers
         if (onlinePlayers.isEmpty()) {
-            logger.info("No online players to process on shutdown")
             return
         }
-
-        logger.info("Processing stats for {} online players on shutdown", onlinePlayers.size)
 
         val players = onlinePlayers.associate { it.uniqueId to it.name }
 
         runBlocking {
-            val processed = surfStatsApi.processAllPlayerStats(players)
-            logger.info(
-                "Processed stats for {}/{} players on shutdown",
-                processed.size, onlinePlayers.size
-            )
+            surfStatsApi.processAllPlayerStats(players)
         }
     }
 }

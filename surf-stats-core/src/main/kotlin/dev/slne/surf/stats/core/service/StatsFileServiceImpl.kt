@@ -43,7 +43,6 @@ class StatsFileServiceImpl : StatsFileService, Services.Fallback {
                 throw IllegalArgumentException("Stats path is not a directory: $statsDirectory")
             }
         }
-        logger.info("StatsFileService initialized with directory: $statsDirectory")
     }
 
     override suspend fun loadStatistics(playerUuid: UUID): Result<PlayerStats> {
@@ -56,7 +55,6 @@ class StatsFileServiceImpl : StatsFileService, Services.Fallback {
                 val filePath = getStatsFilePath(playerUuid)
 
                 if (!filePath.exists()) {
-                    logger.debug("Stats file not found for player: $playerUuid")
                     throw NoSuchElementException("Stats file not found for player: $playerUuid")
                 }
 
@@ -70,10 +68,6 @@ class StatsFileServiceImpl : StatsFileService, Services.Fallback {
                     stats = statsModel.toStatEntries()
                 )
 
-                logger.debug(
-                    "Loaded stats for player {} ({}): {} entries, {} categories",
-                    playerName, playerUuid, playerStats.stats.size, playerStats.categories().size
-                )
                 playerStats
             }.onFailure { error ->
                 logger.error("Failed to load stats for player {}: {}", playerUuid, error.message)
