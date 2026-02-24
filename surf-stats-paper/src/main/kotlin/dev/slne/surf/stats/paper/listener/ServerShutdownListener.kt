@@ -25,6 +25,7 @@ class ServerShutdownListener(
 
 
         val onlinePlayers = server.onlinePlayers
+        logger.warn("Processing stats for {} players on server shutdown", onlinePlayers.size)
         if (onlinePlayers.isEmpty()) {
             return
         }

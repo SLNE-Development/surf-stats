@@ -7,6 +7,9 @@ import dev.slne.surf.database.libs.org.jetbrains.exposed.v1.r2dbc.transactions.s
 import dev.slne.surf.database.libs.org.jetbrains.exposed.v1.r2dbc.upsert
 import dev.slne.surf.stats.api.model.PlayerStatsBatch
 import dev.slne.surf.stats.core.database.table.*
+import kotlinx.coroutines.async
+import kotlinx.coroutines.awaitAll
+import kotlinx.coroutines.coroutineScope
 import org.slf4j.LoggerFactory
 import java.util.UUID
 
@@ -63,54 +66,23 @@ class StatsDatabaseService(
     }
 
     /**
-     * Saves multiple batches, wrapping all operations in a single transaction.
+     * Saves multiple batches in parallel, each in its own transaction.
+     * A failure for one player does not affect the others.
      * Returns the number of batches that failed to save.
      */
-    suspend fun saveBatches(batches: List<PlayerStatsBatch>): Int {
-        var failedCount = 0
-
-        suspendTransaction {
-            // Collect all unique categories and keys across all batches
-            val allCategories = batches.flatMap { it.player.stats.map { s -> s.category } }.toSet()
-            val allKeys = batches.flatMap { it.player.stats.map { s -> s.key } }.toSet()
-
-            StatCategoriesTable.batchInsert(allCategories, ignore = true) { category ->
-                this[StatCategoriesTable.name] = category
-            }
-
-            StatKeysTable.batchInsert(allKeys, ignore = true) { key ->
-                this[StatKeysTable.name] = key
-            }
-
-            for (batch in batches) {
-                try {
-                    val player = batch.player
-
-                    PlayersTable.upsert {
-                        it[uuid] = player.uuid
-                        it[name] = player.name
-                        it[dataVersion] = player.dataVersion
-                        it[updatedAt] = CurrentTimestamp
+    suspend fun saveBatches(batches: List<PlayerStatsBatch>): Int = coroutineScope {
+        batches.map { batch ->
+            async {
+                runCatching { saveBatch(batch) }
+                    .onFailure { e ->
+                        logger.error(
+                            "Failed to save stats for player {} ({}): {}",
+                            batch.player.name, batch.player.uuid, e.message
+                        )
                     }
-
-                    PlayerStatsTable.batchUpsert(player.stats) { entry ->
-                        this[PlayerStatsTable.playerUuid] = player.uuid
-                        this[PlayerStatsTable.categoryName] = entry.category
-                        this[PlayerStatsTable.statKeyName] = entry.key
-                        this[PlayerStatsTable.value] = entry.value
-                        this[PlayerStatsTable.serverName] = batch.serverName
-                    }
-                } catch (e: Exception) {
-                    failedCount++
-                    logger.error(
-                        "Failed to save stats for player {} ({}): {}",
-                        batch.player.name, batch.player.uuid, e.message
-                    )
-                }
+                    .isFailure
             }
-        }
-
-        return failedCount
+        }.awaitAll().count { it }
     }
 
     suspend fun saveCustomStats(
