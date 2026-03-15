@@ -23,17 +23,13 @@ class SurfStatsApiImpl() : SurfStatsApi {
     private val log = logger()
 
     suspend fun onPlayerJoin(playerUuid: UUID, playerName: String) {
-        val clanUuid = playerUuid.findClanByPlayer()?.uuid
-
         StatisticsManagerService.trackPlayer(playerUuid, playerName)
-        log.atInfo().log("Player $playerName ($playerUuid) joined, now tracking stats with clanUuid=$clanUuid")
     }
 
     suspend fun onPlayerQuit(playerUuid: UUID, playerName: String) {
         // Compute final diffs and save before untracking
         processPlayerStats(playerUuid, playerName)
         StatisticsManagerService.untrackPlayer(playerUuid)
-        log.atInfo().log("Player $playerName ($playerUuid) quit, stopped tracking stats")
     }
 
     override suspend fun processPlayerStats(playerUuid: UUID, playerName: String): Result<PlayerStatsBatch> {
