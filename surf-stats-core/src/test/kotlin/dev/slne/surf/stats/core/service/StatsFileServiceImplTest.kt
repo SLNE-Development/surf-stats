@@ -10,7 +10,7 @@ import org.junit.jupiter.api.io.TempDir
 import java.nio.file.Files
 import java.nio.file.Path
 import java.nio.file.Paths
-import java.util.UUID
+import java.util.*
 import java.util.stream.Collectors
 
 class StatsFileServiceImplTest {
@@ -19,14 +19,12 @@ class StatsFileServiceImplTest {
     lateinit var tempDir: Path
 
     private lateinit var statsDir: Path
-    private lateinit var service: StatsFileServiceImpl
 
     @BeforeEach
     fun setup() = runTest {
         statsDir = tempDir.resolve("stats")
         Files.createDirectories(statsDir)
-        service = StatsFileServiceImpl()
-        service.initialize(statsDir)
+        StatsFileService.initialize(statsDir)
     }
 
     @AfterEach
@@ -43,7 +41,7 @@ class StatsFileServiceImplTest {
     @Test
     fun `should return correct stats file path`() {
         val uuid = UUID.randomUUID()
-        val path = service.getStatsFilePath(uuid)
+        val path = StatsFileService.getStatsFilePath(uuid)
 
         assertEquals(statsDir.resolve("$uuid.json"), path)
     }
@@ -68,7 +66,7 @@ class StatsFileServiceImplTest {
 
         Files.writeString(statsDir.resolve("$uuid.json"), statsContent)
 
-        val result = service.loadStatistics(uuid, playerName)
+        val result = StatsFileService.loadStatistics(uuid, playerName)
 
         assertTrue(result.isSuccess)
         val stats = result.getOrNull()
@@ -92,7 +90,7 @@ class StatsFileServiceImplTest {
     fun `should return failure for non-existent file`() = runTest {
         val uuid = UUID.randomUUID()
 
-        val result = service.loadStatistics(uuid)
+        val result = StatsFileService.loadStatistics(uuid)
 
         assertTrue(result.isFailure)
         assertTrue(result.exceptionOrNull() is NoSuchElementException)
@@ -103,7 +101,7 @@ class StatsFileServiceImplTest {
         val uuid = UUID.randomUUID()
         Files.writeString(statsDir.resolve("$uuid.json"), "not valid json")
 
-        val result = service.loadStatistics(uuid)
+        val result = StatsFileService.loadStatistics(uuid)
 
         assertTrue(result.isFailure)
     }
@@ -124,7 +122,7 @@ class StatsFileServiceImplTest {
             uuid2 to "Player2",
             uuid3 to "Player3"
         )
-        val results = service.loadAllStatistics(players)
+        val results = StatsFileService.loadAllStatistics(players)
 
         assertEquals(3, results.size)
         assertTrue(results[uuid1]?.isSuccess == true)
@@ -141,7 +139,7 @@ class StatsFileServiceImplTest {
         val uuid = UUID.randomUUID()
         Files.writeString(statsDir.resolve("$uuid.json"), """{"stats": {}, "DataVersion": 3953}""")
 
-        val result = service.loadStatistics(uuid)
+        val result = StatsFileService.loadStatistics(uuid)
 
         assertTrue(result.isSuccess)
         val stats = result.getOrNull()
@@ -166,7 +164,7 @@ class StatsFileServiceImplTest {
 
         Files.writeString(statsDir.resolve("$uuid.json"), statsContent)
 
-        val result = service.loadStatistics(uuid, "TestPlayer")
+        val result = StatsFileService.loadStatistics(uuid, "TestPlayer")
         val stats = result.getOrNull()!!
 
         val categories = stats.categories()
@@ -180,12 +178,10 @@ class StatsFileServiceImplTest {
     inner class ResourceFileTests {
 
         private val resourceStatsDir: Path = Paths.get("src/test/resources/stats")
-        private lateinit var resourceService: StatsFileServiceImpl
 
         @BeforeEach
         fun setupResourceService() = runTest {
-            resourceService = StatsFileServiceImpl()
-            resourceService.initialize(resourceStatsDir)
+            StatsFileService.initialize(resourceStatsDir)
         }
 
         private fun resourceUuids(): List<UUID> =
@@ -200,7 +196,7 @@ class StatsFileServiceImplTest {
             assertTrue(uuids.isNotEmpty(), "There should be resource stats files to test")
 
             for (uuid in uuids) {
-                val result = resourceService.loadStatistics(uuid, "TestPlayer")
+                val result = StatsFileService.loadStatistics(uuid, "TestPlayer")
                 assertTrue(result.isSuccess, "Failed to load stats for $uuid: ${result.exceptionOrNull()?.message}")
 
                 val stats = result.getOrNull()!!
@@ -216,15 +212,21 @@ class StatsFileServiceImplTest {
             val uuids = resourceUuids()
 
             for (uuid in uuids) {
-                val stats = resourceService.loadStatistics(uuid, "Player").getOrNull()!!
+                val stats = StatsFileService.loadStatistics(uuid, "Player").getOrNull()!!
 
                 stats.stats.forEach { entry ->
-                    assertTrue(entry.category.contains(":"),
-                        "Category '${entry.category}' should be namespaced for $uuid")
-                    assertTrue(entry.key.contains(":"),
-                        "Key '${entry.key}' should be namespaced for $uuid")
-                    assertTrue(entry.value >= 0,
-                        "Stat value should be non-negative for $uuid ${entry.category}/${entry.key}")
+                    assertTrue(
+                        entry.category.contains(":"),
+                        "Category '${entry.category}' should be namespaced for $uuid"
+                    )
+                    assertTrue(
+                        entry.key.contains(":"),
+                        "Key '${entry.key}' should be namespaced for $uuid"
+                    )
+                    assertTrue(
+                        entry.value >= 0,
+                        "Stat value should be non-negative for $uuid ${entry.category}/${entry.key}"
+                    )
                 }
             }
         }
@@ -234,11 +236,13 @@ class StatsFileServiceImplTest {
             val uuids = resourceUuids()
 
             for (uuid in uuids) {
-                val stats = resourceService.loadStatistics(uuid, "Player").getOrNull()!!
+                val stats = StatsFileService.loadStatistics(uuid, "Player").getOrNull()!!
                 val categories = stats.categories()
 
-                assertTrue(categories.isNotEmpty(),
-                    "Should have at least one category for $uuid")
+                assertTrue(
+                    categories.isNotEmpty(),
+                    "Should have at least one category for $uuid"
+                )
             }
         }
 
@@ -247,15 +251,15 @@ class StatsFileServiceImplTest {
             val existingUuid = resourceUuids().first()
             val nonExistingUuid = UUID.randomUUID()
 
-            assertTrue(resourceService.statsExist(existingUuid))
-            assertFalse(resourceService.statsExist(nonExistingUuid))
+            assertTrue(StatsFileService.statsExist(existingUuid))
+            assertFalse(StatsFileService.statsExist(nonExistingUuid))
         }
 
         @Test
         fun `should batch load all resource files`() = runTest {
             val players = resourceUuids().associateWith { "Player-$it" }
 
-            val results = resourceService.loadAllStatistics(players)
+            val results = StatsFileService.loadAllStatistics(players)
 
             assertEquals(players.size, results.size)
             results.forEach { (uuid, result) ->
@@ -267,7 +271,7 @@ class StatsFileServiceImplTest {
         @Test
         fun `should support getStat lookup on resource file data`() = runTest {
             val uuid = resourceUuids().first()
-            val stats = resourceService.loadStatistics(uuid, "Player").getOrNull()!!
+            val stats = StatsFileService.loadStatistics(uuid, "Player").getOrNull()!!
 
             // Pick the first entry and verify getStat returns the same value
             val firstEntry = stats.stats.first()
@@ -280,7 +284,7 @@ class StatsFileServiceImplTest {
         @Test
         fun `should support getByCategory on resource file data`() = runTest {
             val uuid = resourceUuids().first()
-            val stats = resourceService.loadStatistics(uuid, "Player").getOrNull()!!
+            val stats = StatsFileService.loadStatistics(uuid, "Player").getOrNull()!!
 
             val firstCategory = stats.categories().first()
             val categoryStats = stats.getByCategory(firstCategory)

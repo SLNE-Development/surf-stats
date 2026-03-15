@@ -1,30 +1,22 @@
 package dev.slne.surf.stats.core.service
 
-import com.google.auto.service.AutoService
 import dev.slne.surf.stats.api.model.PlayerStats
-import dev.slne.surf.stats.api.service.StatsFileService
 import dev.slne.surf.stats.core.json.StatsJsonModel
-import net.kyori.adventure.util.Services
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.async
-import kotlinx.coroutines.awaitAll
-import kotlinx.coroutines.coroutineScope
-import kotlinx.coroutines.withContext
+import dev.slne.surf.surfapi.core.api.util.logger
+import kotlinx.coroutines.*
 import kotlinx.serialization.json.Json
-import org.slf4j.LoggerFactory
 import java.nio.file.Files
 import java.nio.file.Path
-import java.util.UUID
+import java.util.*
 import kotlin.io.path.exists
 import kotlin.io.path.readText
 
 /**
  * Implementation of StatsFileService that reads player statistics from JSON files.
  */
-@AutoService(StatsFileService::class)
-class StatsFileServiceImpl : StatsFileService, Services.Fallback {
+object StatsFileServiceImpl : StatsFileService {
 
-    private val logger = LoggerFactory.getLogger(StatsFileServiceImpl::class.java)
+    private val log = logger()
 
     private lateinit var statsDirectory: Path
 
@@ -38,7 +30,7 @@ class StatsFileServiceImpl : StatsFileService, Services.Fallback {
         this.statsDirectory = statsDirectory
         withContext(Dispatchers.IO) {
             if (!Files.exists(statsDirectory)) {
-                logger.warn("Stats directory does not exist: $statsDirectory")
+                log.atWarning().log("Stats directory does not exist: $statsDirectory")
             } else if (!Files.isDirectory(statsDirectory)) {
                 throw IllegalArgumentException("Stats path is not a directory: $statsDirectory")
             }
@@ -70,7 +62,7 @@ class StatsFileServiceImpl : StatsFileService, Services.Fallback {
 
                 playerStats
             }.onFailure { error ->
-                logger.error("Failed to load stats for player {}: {}", playerUuid, error.message)
+                log.atSevere().log("Failed to load stats for player {}: {}", playerUuid, error.message)
             }
         }
     }

@@ -1,3 +1,6 @@
+import dev.slne.surf.surfapi.gradle.util.registerSoft
+import net.minecrell.pluginyml.paper.PaperPluginDescription
+
 plugins {
     id("dev.slne.surf.surfapi.gradle.paper-plugin")
 }
@@ -7,13 +10,16 @@ surfPaperPluginApi {
     authors.add("SLNE Dev Team")
     generateLibraryLoader(false)
     foliaSupported(true)
-    withCorePaper()
+
+    serverDependencies {
+        registerSoft(
+            "surf-clan-paper",
+            joinClassPath = true,
+            loadOrder = PaperPluginDescription.RelativeLoadOrder.BEFORE
+        )
+    }
 }
 
 dependencies {
-    api(project(":surf-stats-core"))
-}
-
-tasks.processResources {
-    expand("version" to project.version)
+    api(projects.surfStatsCore)
 }

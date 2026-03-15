@@ -1,6 +1,6 @@
 package dev.slne.surf.stats.core.repository
 
-import dev.slne.surf.stats.api.service.fileService
+import dev.slne.surf.stats.core.service.StatsFileService
 import kotlinx.coroutines.test.runTest
 import org.junit.jupiter.api.Assertions.*
 import org.junit.jupiter.api.BeforeEach
@@ -8,14 +8,13 @@ import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.io.TempDir
 import java.nio.file.Files
 import java.nio.file.Path
-import java.util.UUID
+import java.util.*
 
 class PlayerStatsRepositoryImplTest {
 
     @TempDir
     lateinit var tempDir: Path
 
-    private lateinit var repository: PlayerStatsRepositoryImpl
     private lateinit var statsDir: Path
 
     private val simpleStatsJson =
@@ -25,8 +24,7 @@ class PlayerStatsRepositoryImplTest {
     fun setup() = runTest {
         statsDir = tempDir.resolve("stats")
         Files.createDirectories(statsDir)
-        fileService.initialize(statsDir)
-        repository = PlayerStatsRepositoryImpl()
+        StatsFileService.initialize(statsDir)
     }
 
     @Test
@@ -34,7 +32,7 @@ class PlayerStatsRepositoryImplTest {
         val uuid = UUID.randomUUID()
         Files.writeString(statsDir.resolve("$uuid.json"), simpleStatsJson)
 
-        val result = repository.loadStats(uuid, "TestPlayer")
+        val result = PlayerStatsRepository.loadStats(uuid, "TestPlayer")
 
         assertNotNull(result)
         assertEquals(uuid, result?.uuid)
@@ -47,7 +45,7 @@ class PlayerStatsRepositoryImplTest {
     fun `should return null for non-existent player`() = runTest {
         val uuid = UUID.randomUUID()
 
-        val result = repository.loadStats(uuid)
+        val result = PlayerStatsRepository.loadStats(uuid)
 
         assertNull(result)
     }
@@ -67,7 +65,7 @@ class PlayerStatsRepositoryImplTest {
             uuid2 to "Player2",
             uuid3 to "Player3"
         )
-        val result = repository.loadAllStats(players)
+        val result = PlayerStatsRepository.loadAllStats(players)
 
         assertEquals(2, result.size)
         assertTrue(result.any { it.uuid == uuid1 })
@@ -82,8 +80,8 @@ class PlayerStatsRepositoryImplTest {
 
         Files.writeString(statsDir.resolve("$existingUuid.json"), simpleStatsJson)
 
-        assertTrue(repository.statsExist(existingUuid))
-        assertFalse(repository.statsExist(nonExistingUuid))
+        assertTrue(PlayerStatsRepository.statsExist(existingUuid))
+        assertFalse(PlayerStatsRepository.statsExist(nonExistingUuid))
     }
 
     @Test
@@ -101,7 +99,7 @@ class PlayerStatsRepositoryImplTest {
         """.trimIndent()
         )
 
-        val result = repository.loadStats(uuid, "TestPlayer")
+        val result = PlayerStatsRepository.loadStats(uuid, "TestPlayer")
 
         assertNotNull(result)
         assertEquals(3, result?.stats?.size)
