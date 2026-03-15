@@ -11,6 +11,9 @@ dependencies {
     api(projects.surfStatsApi)
     compileOnlyApi(libs.surf.clan.api)
 
+    testImplementation("com.google.flogger:flogger:0.9")
+    testRuntimeOnly("com.google.flogger:flogger-system-backend:0.9")
+
     testImplementation(libs.junit.jupiter)
     testImplementation(libs.kotlinx.serialization.json)
     testImplementation(libs.kotlinx.coroutines.test)
