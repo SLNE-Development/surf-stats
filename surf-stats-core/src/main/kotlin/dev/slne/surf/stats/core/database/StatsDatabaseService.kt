@@ -2,6 +2,7 @@ package dev.slne.surf.stats.core.database
 
 import dev.slne.surf.database.libs.org.jetbrains.exposed.v1.javatime.CurrentTimestamp
 import dev.slne.surf.database.libs.org.jetbrains.exposed.v1.r2dbc.batchInsert
+import dev.slne.surf.database.libs.org.jetbrains.exposed.v1.r2dbc.batchUpsert
 import dev.slne.surf.database.libs.org.jetbrains.exposed.v1.r2dbc.transactions.suspendTransaction
 import dev.slne.surf.database.libs.org.jetbrains.exposed.v1.r2dbc.upsert
 import dev.slne.surf.stats.api.StatsInstance
@@ -24,6 +25,42 @@ object StatsDatabaseService {
         }
     }
 
+    suspend fun saveBatch(batch: PlayerStatsBatch) {
+        val player = batch.player
+
+        suspendTransaction {
+            // Upsert player
+            PlayersTable.upsert {
+                it[uuid] = player.uuid
+                it[name] = player.name
+                it[dataVersion] = player.dataVersion
+                it[updatedAt] = CurrentTimestamp
+            }
+
+            // Use batch operations instead of individual inserts/upserts for performance.
+            // With 20 players and ~200 entries each, this reduces ~4000 individual queries
+            // to ~20 batch statements.
+            val categories = player.stats.map { it.category }.toSet()
+            val keys = player.stats.map { it.key }.toSet()
+
+            StatCategoriesTable.batchInsert(categories, ignore = true) { category ->
+                this[StatCategoriesTable.name] = category
+            }
+
+            StatKeysTable.batchInsert(keys, ignore = true) { key ->
+                this[StatKeysTable.name] = key
+            }
+
+            PlayerStatsTable.batchUpsert(player.stats) { entry ->
+                this[PlayerStatsTable.playerUuid] = player.uuid
+                this[PlayerStatsTable.categoryName] = entry.category
+                this[PlayerStatsTable.statKeyName] = entry.key
+                this[PlayerStatsTable.value] = entry.value
+                this[PlayerStatsTable.serverName] = batch.serverName
+            }
+        }
+    }
+
     /**
      * Saves diff entries for a single player to the database.
      * Each entry is INSERTed as a new row (not upserted), since diff entries
@@ -36,7 +73,9 @@ object StatsDatabaseService {
         diffs: List<StatEntry>,
         clanUuid: UUID?
     ) {
-        if (diffs.isEmpty()) return
+        if (diffs.isEmpty()) {
+            return
+        }
 
         suspendTransaction {
             // Upsert player
@@ -59,15 +98,36 @@ object StatsDatabaseService {
             }
 
             // INSERT (not upsert) - each diff is a new row with its own timestamp
-            PlayerStatsTable.batchInsert(diffs) { entry ->
-                this[PlayerStatsTable.playerUuid] = playerUuid
-                this[PlayerStatsTable.categoryName] = entry.category
-                this[PlayerStatsTable.statKeyName] = entry.key
-                this[PlayerStatsTable.value] = entry.value
-                this[PlayerStatsTable.serverName] = StatsInstance.serverName
-                this[PlayerStatsTable.clanUuid] = clanUuid
+            PlayerStatsHistoryTable.batchInsert(diffs) { entry ->
+                this[PlayerStatsHistoryTable.playerUuid] = playerUuid
+                this[PlayerStatsHistoryTable.categoryName] = entry.category
+                this[PlayerStatsHistoryTable.statKeyName] = entry.key
+                this[PlayerStatsHistoryTable.value] = entry.value
+                this[PlayerStatsHistoryTable.serverName] = StatsInstance.serverName
+                this[PlayerStatsHistoryTable.clanUuid] = clanUuid
             }
         }
+    }
+
+    /**
+     * Saves multiple actual stat batches in parallel.
+     * Returns the set of player UUIDs that failed to save.
+     */
+    suspend fun saveBatches(batches: List<PlayerStatsBatch>): Set<UUID> = coroutineScope {
+        batches.map { batch ->
+            async {
+                runCatching {
+                    saveBatch(batch)
+                }.onFailure { e ->
+                    log.atSevere().log(
+                        "Failed to save stats for player {} ({}): {}",
+                        batch.player.name, batch.player.uuid, e.message
+                    )
+                }.let { result ->
+                    if (result.isFailure) batch.player.uuid else null
+                }
+            }
+        }.awaitAll().filterNotNull().toSet()
     }
 
     /**
