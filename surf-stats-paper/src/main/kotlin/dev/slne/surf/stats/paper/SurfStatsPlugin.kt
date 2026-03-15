@@ -1,13 +1,18 @@
 package dev.slne.surf.stats.paper
 
 import com.github.shynixn.mccoroutine.folia.SuspendingJavaPlugin
+import com.github.shynixn.mccoroutine.folia.launch
 import dev.slne.surf.stats.api.StatsInstance
 import dev.slne.surf.stats.api.SurfStatsApi
 import dev.slne.surf.stats.core.service.StatsFileService
 import dev.slne.surf.stats.paper.listener.PlayerStatsListener
 import dev.slne.surf.surfapi.bukkit.api.event.register
 import dev.slne.surf.surfapi.core.api.util.logger
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.isActive
 import org.bukkit.plugin.java.JavaPlugin
+import kotlin.time.Duration.Companion.minutes
 
 val plugin get() = JavaPlugin.getPlugin(SurfStatsPlugin::class.java)
 
@@ -17,6 +22,7 @@ val plugin get() = JavaPlugin.getPlugin(SurfStatsPlugin::class.java)
  */
 class SurfStatsPlugin : SuspendingJavaPlugin() {
     private val log = logger()
+    private var diffSaveJob: Job? = null
 
     override suspend fun onLoadAsync() {
         StatsInstance.onLoad()
@@ -27,9 +33,12 @@ class SurfStatsPlugin : SuspendingJavaPlugin() {
 
         initializeServices()
         registerListeners()
+        startPeriodicDiffSave()
     }
 
     override suspend fun onDisableAsync() {
+        diffSaveJob?.cancel()
+
         val onlinePlayers = server.onlinePlayers.associate { it.uniqueId to it.name }
         log.atWarning().log("Processing final stats for ${onlinePlayers.size} players on server shutdown")
 
@@ -61,6 +70,30 @@ class SurfStatsPlugin : SuspendingJavaPlugin() {
 
     private fun registerListeners() {
         PlayerStatsListener.register()
+    }
 
+    private fun startPeriodicDiffSave() {
+        val interval = SAVE_INTERVAL
+
+        diffSaveJob = launch {
+            delay(interval) // initial delay before first save
+            while (isActive) {
+                val players = server.onlinePlayers.associate { it.uniqueId to it.name }
+                if (players.isNotEmpty()) {
+                    runCatching {
+                        SurfStatsApi.processAllPlayerStats(players)
+                    }.onFailure { e ->
+                        log.atSevere().withCause(e).log("Failed to save periodic stat diffs")
+                    }
+                }
+                delay(interval)
+            }
+        }
+
+        log.atInfo().log("Periodic diff save started (interval: ${interval.inWholeMinutes}m)")
+    }
+
+    companion object {
+        private val SAVE_INTERVAL = 5.minutes
     }
 }

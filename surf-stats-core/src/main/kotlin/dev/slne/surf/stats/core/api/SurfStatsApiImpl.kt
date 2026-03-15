@@ -52,6 +52,8 @@ class SurfStatsApiImpl() : SurfStatsApi {
                     diffs = diffs,
                     clanUuid = clanUuid
                 )
+
+                StatisticsManagerService.updateSnapshot(playerUuid, playerName)
             }
 
             PlayerStatsBatch(
@@ -87,9 +89,16 @@ class SurfStatsApiImpl() : SurfStatsApi {
         }
 
         if (batches.isNotEmpty()) {
-            val failedCount = StatsDatabaseService.saveDiffBatches(batches, diffsByPlayer)
-            if (failedCount > 0) {
-                log.atWarning().log("Failed to save diff stats for $failedCount/${batches.size} players")
+            val failedUuids = StatsDatabaseService.saveDiffBatches(batches, diffsByPlayer)
+            if (failedUuids.isNotEmpty()) {
+                log.atWarning().log("Failed to save diff stats for ${failedUuids.size}/${batches.size} players")
+            }
+
+            // Only update snapshots for players whose diffs were persisted successfully
+            for ((uuid, name) in players) {
+                if (uuid !in failedUuids && uuid in diffsByPlayer) {
+                    StatisticsManagerService.updateSnapshot(uuid, name)
+                }
             }
         }
 

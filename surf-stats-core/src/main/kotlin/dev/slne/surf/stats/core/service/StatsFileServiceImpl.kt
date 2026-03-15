@@ -62,7 +62,7 @@ object StatsFileServiceImpl : StatsFileService {
 
                 playerStats
             }.onFailure { error ->
-                log.atSevere().log("Failed to load stats for player {}: {}", playerUuid, error.message)
+                log.atSevere().withCause(error).log("Failed to load stats for player $playerUuid")
             }
         }
     }

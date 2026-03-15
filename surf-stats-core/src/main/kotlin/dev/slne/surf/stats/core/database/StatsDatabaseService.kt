@@ -72,12 +72,12 @@ object StatsDatabaseService {
 
     /**
      * Saves multiple diff batches in parallel.
-     * Returns the number of batches that failed to save.
+     * Returns the set of player UUIDs that failed to save.
      */
     suspend fun saveDiffBatches(
         batches: List<PlayerStatsBatch>,
         diffsByPlayer: Map<UUID, List<StatEntry>>
-    ): Int = coroutineScope {
+    ): Set<UUID> = coroutineScope {
         batches.map { batch ->
             async {
                 val diffs = diffsByPlayer[batch.player.uuid] ?: emptyList()
@@ -94,9 +94,11 @@ object StatsDatabaseService {
                         "Failed to save diff stats for player {} ({}): {}",
                         batch.player.name, batch.player.uuid, e.message
                     )
-                }.isFailure
+                }.let { result ->
+                    if (result.isFailure) batch.player.uuid else null
+                }
             }
-        }.awaitAll().count { it }
+        }.awaitAll().filterNotNull().toSet()
     }
 
     suspend fun saveCustomStats(

@@ -22,9 +22,15 @@ interface StatisticsManagerService {
     /**
      * Computes the diff between the current JSON file stats and the stored snapshot.
      * Only returns entries where the diff is > 0.
-     * Updates the in-memory snapshot to the current values after computation.
+     * Does NOT update the snapshot — call [updateSnapshot] after persisting the diffs.
      */
     suspend fun computeDiffs(uuid: UUID, name: String): List<StatEntry>
+
+    /**
+     * Updates the stored snapshot for a player to the current JSON file stats.
+     * Call this after successfully persisting the diffs returned by [computeDiffs].
+     */
+    suspend fun updateSnapshot(uuid: UUID, name: String)
 
     /**
      * Stop tracking a player (called on quit).
