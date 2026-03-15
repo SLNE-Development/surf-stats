@@ -3,9 +3,9 @@ package dev.slne.surf.stats.api
 import dev.slne.surf.stats.api.model.PlayerStats
 import dev.slne.surf.stats.api.model.PlayerStatsBatch
 import dev.slne.surf.surfapi.core.api.util.requiredService
-import java.util.UUID
+import java.util.*
 
-val surfStatsApi = requiredService<SurfStatsApi>()
+private val api = requiredService<SurfStatsApi>()
 
 /**
  * Main API interface for the Surf Stats system.
@@ -17,23 +17,22 @@ val surfStatsApi = requiredService<SurfStatsApi>()
  * ```
  */
 interface SurfStatsApi {
-
-
     /**
-     * Processes statistics for a player (e.g., on logout).
-     * Loads stats from filesystem and prepares for database migration.
+     * Processes statistics for a player by computing diffs since the last snapshot
+     * and saving them to the database.
      *
      * @param playerUuid The player's UUID
      * @param playerName The player's name
-     * @return Result containing the batch ready for database insertion
+     * @return Result containing the batch of diff entries saved
      */
     suspend fun processPlayerStats(playerUuid: UUID, playerName: String): Result<PlayerStatsBatch>
 
     /**
-     * Processes statistics for multiple players (e.g., on server shutdown).
+     * Processes statistics for multiple players (e.g., on world save).
+     * Computes diffs for all tracked players and saves them to the database.
      *
      * @param players Map of UUID to player name
-     * @return List of batches ready for database insertion
+     * @return List of batches saved
      */
     suspend fun processAllPlayerStats(players: Map<UUID, String>): List<PlayerStatsBatch>
 
@@ -69,11 +68,15 @@ interface SurfStatsApi {
      * Extracts all unique category names from a player's stats.
      * Useful for populating the stat_categories table.
      */
-    fun extractCategories(stats: PlayerStats): Set<String> = stats.categories()
+    fun extractCategories(stats: PlayerStats): Set<String>
 
     /**
      * Extracts all unique stat key names from a player's stats.
      * Useful for populating the stat_keys table.
      */
-    fun extractStatKeys(stats: PlayerStats): Set<String> = stats.statKeys()
+    fun extractStatKeys(stats: PlayerStats): Set<String>
+
+    companion object : SurfStatsApi by api {
+        val INSTANCE get() = api
+    }
 }

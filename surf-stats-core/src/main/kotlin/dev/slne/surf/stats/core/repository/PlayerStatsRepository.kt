@@ -1,10 +1,7 @@
-package dev.slne.surf.stats.api.repository
+package dev.slne.surf.stats.core.repository
 
 import dev.slne.surf.stats.api.model.PlayerStats
-import dev.slne.surf.surfapi.core.api.util.requiredService
-import java.util.UUID
-
-val playerStatsRepository = requiredService<PlayerStatsRepository>()
+import java.util.*
 
 /**
  * Repository interface for loading player statistics from the filesystem.
@@ -50,4 +47,6 @@ interface PlayerStatsRepository {
      * @return true if stats file exists
      */
     suspend fun statsExist(uuid: UUID): Boolean
+
+    companion object : PlayerStatsRepository by PlayerStatsRepositoryImpl
 }

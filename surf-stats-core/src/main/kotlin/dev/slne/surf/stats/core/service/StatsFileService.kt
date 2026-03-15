@@ -1,11 +1,8 @@
-package dev.slne.surf.stats.api.service
+package dev.slne.surf.stats.core.service
 
 import dev.slne.surf.stats.api.model.PlayerStats
-import dev.slne.surf.surfapi.core.api.util.requiredService
 import java.nio.file.Path
-import java.util.UUID
-
-val fileService = requiredService<StatsFileService>()
+import java.util.*
 
 /**
  * Service interface for file-based statistics operations.
@@ -66,4 +63,6 @@ interface StatsFileService {
      * @return true if the stats file exists
      */
     suspend fun statsExist(playerUuid: UUID): Boolean
+
+    companion object : StatsFileService by StatsFileServiceImpl
 }

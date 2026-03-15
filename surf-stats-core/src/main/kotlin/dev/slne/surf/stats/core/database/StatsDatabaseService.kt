@@ -5,27 +5,23 @@ import dev.slne.surf.database.libs.org.jetbrains.exposed.v1.r2dbc.batchInsert
 import dev.slne.surf.database.libs.org.jetbrains.exposed.v1.r2dbc.batchUpsert
 import dev.slne.surf.database.libs.org.jetbrains.exposed.v1.r2dbc.transactions.suspendTransaction
 import dev.slne.surf.database.libs.org.jetbrains.exposed.v1.r2dbc.upsert
+import dev.slne.surf.stats.api.StatsInstance
 import dev.slne.surf.stats.api.model.PlayerStatsBatch
+import dev.slne.surf.stats.api.model.StatEntry
 import dev.slne.surf.stats.core.database.table.*
+import dev.slne.surf.surfapi.core.api.util.logger
 import kotlinx.coroutines.async
 import kotlinx.coroutines.awaitAll
 import kotlinx.coroutines.coroutineScope
-import org.slf4j.LoggerFactory
-import java.util.UUID
+import java.util.*
 
-class StatsDatabaseService(
-    private val serverName: String,
-    private val serverLabel: String
-) {
+object StatsDatabaseService {
+    private val log = logger()
 
-    private val logger = LoggerFactory.getLogger(StatsDatabaseService::class.java)
-
-    suspend fun registerServer() {
-        suspendTransaction {
-            ServersTable.upsert {
-                it[name] = serverName
-                it[label] = serverLabel
-            }
+    suspend fun registerServer() = suspendTransaction {
+        ServersTable.upsert {
+            it[name] = StatsInstance.serverName
+            it[label] = StatsInstance.serverDisplayName
         }
     }
 
@@ -66,23 +62,103 @@ class StatsDatabaseService(
     }
 
     /**
-     * Saves multiple batches in parallel, each in its own transaction.
-     * A failure for one player does not affect the others.
-     * Returns the number of batches that failed to save.
+     * Saves diff entries for a single player to the database.
+     * Each entry is INSERTed as a new row (not upserted), since diff entries
+     * are append-only with a timestamp.
      */
-    suspend fun saveBatches(batches: List<PlayerStatsBatch>): Int = coroutineScope {
+    suspend fun saveDiffBatch(
+        playerUuid: UUID,
+        playerName: String,
+        dataVersion: Int,
+        diffs: List<StatEntry>,
+        clanUuid: UUID?
+    ) {
+        if (diffs.isEmpty()) {
+            return
+        }
+
+        suspendTransaction {
+            // Upsert player
+            PlayersTable.upsert {
+                it[uuid] = playerUuid
+                it[name] = playerName
+                it[PlayersTable.dataVersion] = dataVersion
+                it[updatedAt] = CurrentTimestamp
+            }
+
+            val categories = diffs.map { it.category }.toSet()
+            val keys = diffs.map { it.key }.toSet()
+
+            StatCategoriesTable.batchInsert(categories, ignore = true) { category ->
+                this[StatCategoriesTable.name] = category
+            }
+
+            StatKeysTable.batchInsert(keys, ignore = true) { key ->
+                this[StatKeysTable.name] = key
+            }
+
+            // INSERT (not upsert) - each diff is a new row with its own timestamp
+            PlayerStatsHistoryTable.batchInsert(diffs) { entry ->
+                this[PlayerStatsHistoryTable.playerUuid] = playerUuid
+                this[PlayerStatsHistoryTable.categoryName] = entry.category
+                this[PlayerStatsHistoryTable.statKeyName] = entry.key
+                this[PlayerStatsHistoryTable.value] = entry.value
+                this[PlayerStatsHistoryTable.serverName] = StatsInstance.serverName
+                this[PlayerStatsHistoryTable.clanUuid] = clanUuid
+            }
+        }
+    }
+
+    /**
+     * Saves multiple actual stat batches in parallel.
+     * Returns the set of player UUIDs that failed to save.
+     */
+    suspend fun saveBatches(batches: List<PlayerStatsBatch>): Set<UUID> = coroutineScope {
         batches.map { batch ->
             async {
-                runCatching { saveBatch(batch) }
-                    .onFailure { e ->
-                        logger.error(
-                            "Failed to save stats for player {} ({}): {}",
-                            batch.player.name, batch.player.uuid, e.message
-                        )
-                    }
-                    .isFailure
+                runCatching {
+                    saveBatch(batch)
+                }.onFailure { e ->
+                    log.atSevere().log(
+                        "Failed to save stats for player {} ({}): {}",
+                        batch.player.name, batch.player.uuid, e.message
+                    )
+                }.let { result ->
+                    if (result.isFailure) batch.player.uuid else null
+                }
             }
-        }.awaitAll().count { it }
+        }.awaitAll().filterNotNull().toSet()
+    }
+
+    /**
+     * Saves multiple diff batches in parallel.
+     * Returns the set of player UUIDs that failed to save.
+     */
+    suspend fun saveDiffBatches(
+        batches: List<PlayerStatsBatch>,
+        diffsByPlayer: Map<UUID, List<StatEntry>>
+    ): Set<UUID> = coroutineScope {
+        batches.map { batch ->
+            async {
+                val diffs = diffsByPlayer[batch.player.uuid] ?: emptyList()
+                runCatching {
+                    saveDiffBatch(
+                        playerUuid = batch.player.uuid,
+                        playerName = batch.player.name,
+                        dataVersion = batch.player.dataVersion,
+                        diffs = diffs,
+                        clanUuid = batch.clanUuid
+                    )
+                }.onFailure { e ->
+                    log.atSevere().log(
+                        "Failed to save diff stats for player {} ({}): {}",
+                        batch.player.name, batch.player.uuid, e.message
+                    )
+                }.let { result ->
+                    if (result.isFailure) batch.player.uuid else null
+                }
+            }
+        }.awaitAll().filterNotNull().toSet()
     }
 
     suspend fun saveCustomStats(
@@ -108,12 +184,13 @@ class StatsDatabaseService(
                 this[StatKeysTable.name] = key
             }
 
-            PlayerStatsTable.batchUpsert(stats.entries.toList()) { (key, value) ->
+            // Custom stats are also inserted as diff entries
+            PlayerStatsTable.batchInsert(stats.entries.toList()) { (key, value) ->
                 this[PlayerStatsTable.playerUuid] = playerUuid
                 this[PlayerStatsTable.categoryName] = category
                 this[PlayerStatsTable.statKeyName] = key
                 this[PlayerStatsTable.value] = value
-                this[PlayerStatsTable.serverName] = serverName
+                this[PlayerStatsTable.serverName] = StatsInstance.serverName
             }
         }
     }

@@ -4,12 +4,15 @@ plugins {
 
 surfCoreApi {
     withSurfDatabaseR2dbc("1.3.0", "libs.database")
+    withCoreCommon()
 }
 
 dependencies {
-    api(project(":surf-stats-api"))
-    compileOnly(libs.kotlinx.serialization.json)
-    compileOnly(libs.kotlinx.coroutines.core)
+    api(projects.surfStatsApi)
+    compileOnlyApi(libs.surf.clan.api)
+
+    testImplementation("com.google.flogger:flogger:0.9")
+    testRuntimeOnly("com.google.flogger:flogger-system-backend:0.9")
 
     testImplementation(libs.junit.jupiter)
     testImplementation(libs.kotlinx.serialization.json)
