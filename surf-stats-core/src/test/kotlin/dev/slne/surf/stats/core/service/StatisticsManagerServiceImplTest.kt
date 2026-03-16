@@ -1,5 +1,7 @@
 package dev.slne.surf.stats.core.service
 
+import dev.slne.surf.stats.api.model.PlayerStats
+import dev.slne.surf.stats.api.model.StatEntry
 import dev.slne.surf.stats.api.service.StatisticsManagerService
 import kotlinx.coroutines.test.runTest
 import org.junit.jupiter.api.Assertions.*
@@ -262,6 +264,55 @@ class StatisticsManagerServiceImplTest {
         @Test
         fun `should be safe to untrack non-tracked player`() {
             assertDoesNotThrow { service.untrackPlayer(UUID.randomUUID()) }
+        }
+    }
+
+    @Nested
+    inner class DiffEntries {
+        private val impl = service as StatisticsManagerServiceImpl
+
+        @Test
+        fun `should return positive diffs`() {
+            val snapshot = PlayerStats(uuid, playerName, 0, listOf(
+                StatEntry("minecraft:mined", "minecraft:stone", 100L)
+            ))
+            val current = PlayerStats(uuid, playerName, 0, listOf(
+                StatEntry("minecraft:mined", "minecraft:stone", 150L)
+            ))
+
+            val diffs = impl.diffEntries(snapshot, current)
+
+            assertEquals(1, diffs.size)
+            assertEquals(50L, diffs[0].value)
+        }
+
+        @Test
+        fun `should filter out zero and negative diffs`() {
+            val snapshot = PlayerStats(uuid, playerName, 0, listOf(
+                StatEntry("minecraft:mined", "minecraft:stone", 100L),
+                StatEntry("minecraft:mined", "minecraft:dirt", 50L)
+            ))
+            val current = PlayerStats(uuid, playerName, 0, listOf(
+                StatEntry("minecraft:mined", "minecraft:stone", 100L),
+                StatEntry("minecraft:mined", "minecraft:dirt", 30L)
+            ))
+
+            val diffs = impl.diffEntries(snapshot, current)
+
+            assertTrue(diffs.isEmpty())
+        }
+
+        @Test
+        fun `should treat missing snapshot entries as zero`() {
+            val snapshot = PlayerStats(uuid, playerName, 0, emptyList())
+            val current = PlayerStats(uuid, playerName, 0, listOf(
+                StatEntry("minecraft:mined", "minecraft:stone", 100L)
+            ))
+
+            val diffs = impl.diffEntries(snapshot, current)
+
+            assertEquals(1, diffs.size)
+            assertEquals(100L, diffs[0].value)
         }
     }
 }

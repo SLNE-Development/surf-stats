@@ -18,6 +18,34 @@ import java.util.*
 object StatsDatabaseService {
     private val log = logger()
 
+    private suspend fun ensurePlayerAndDimensions(
+        playerUuid: UUID,
+        playerName: String,
+        dataVersion: Int,
+        stats: Collection<StatEntry>,
+        excludeDataVersionOnUpdate: Boolean = false
+    ) {
+        PlayersTable.upsert(
+            onUpdateExclude = if (excludeDataVersionOnUpdate) listOf(PlayersTable.dataVersion) else emptyList()
+        ) {
+            it[uuid] = playerUuid
+            it[name] = playerName
+            it[PlayersTable.dataVersion] = dataVersion
+            it[updatedAt] = CurrentTimestamp
+        }
+
+        val categories = stats.map { it.category }.toSet()
+        val keys = stats.map { it.key }.toSet()
+
+        StatCategoriesTable.batchInsert(categories, ignore = true) { category ->
+            this[StatCategoriesTable.name] = category
+        }
+
+        StatKeysTable.batchInsert(keys, ignore = true) { key ->
+            this[StatKeysTable.name] = key
+        }
+    }
+
     suspend fun registerServer() = suspendTransaction {
         ServersTable.upsert {
             it[name] = StatsInstance.serverName
@@ -29,27 +57,7 @@ object StatsDatabaseService {
         val player = batch.player
 
         suspendTransaction {
-            // Upsert player
-            PlayersTable.upsert {
-                it[uuid] = player.uuid
-                it[name] = player.name
-                it[dataVersion] = player.dataVersion
-                it[updatedAt] = CurrentTimestamp
-            }
-
-            // Use batch operations instead of individual inserts/upserts for performance.
-            // With 20 players and ~200 entries each, this reduces ~4000 individual queries
-            // to ~20 batch statements.
-            val categories = player.stats.map { it.category }.toSet()
-            val keys = player.stats.map { it.key }.toSet()
-
-            StatCategoriesTable.batchInsert(categories, ignore = true) { category ->
-                this[StatCategoriesTable.name] = category
-            }
-
-            StatKeysTable.batchInsert(keys, ignore = true) { key ->
-                this[StatKeysTable.name] = key
-            }
+            ensurePlayerAndDimensions(player.uuid, player.name, player.dataVersion, player.stats)
 
             PlayerStatsTable.batchUpsert(player.stats) { entry ->
                 this[PlayerStatsTable.playerUuid] = player.uuid
@@ -78,24 +86,7 @@ object StatsDatabaseService {
         }
 
         suspendTransaction {
-            // Upsert player
-            PlayersTable.upsert {
-                it[uuid] = playerUuid
-                it[name] = playerName
-                it[PlayersTable.dataVersion] = dataVersion
-                it[updatedAt] = CurrentTimestamp
-            }
-
-            val categories = diffs.map { it.category }.toSet()
-            val keys = diffs.map { it.key }.toSet()
-
-            StatCategoriesTable.batchInsert(categories, ignore = true) { category ->
-                this[StatCategoriesTable.name] = category
-            }
-
-            StatKeysTable.batchInsert(keys, ignore = true) { key ->
-                this[StatKeysTable.name] = key
-            }
+            ensurePlayerAndDimensions(playerUuid, playerName, dataVersion, diffs)
 
             // INSERT (not upsert) - each diff is a new row with its own timestamp
             PlayerStatsHistoryTable.batchInsert(diffs) { entry ->
@@ -135,12 +126,11 @@ object StatsDatabaseService {
      * Returns the set of player UUIDs that failed to save.
      */
     suspend fun saveDiffBatches(
-        batches: List<PlayerStatsBatch>,
-        diffsByPlayer: Map<UUID, List<StatEntry>>
+        batches: List<PlayerStatsBatch>
     ): Set<UUID> = coroutineScope {
         batches.map { batch ->
             async {
-                val diffs = diffsByPlayer[batch.player.uuid] ?: emptyList()
+                val diffs = batch.player.stats
                 runCatching {
                     saveDiffBatch(
                         playerUuid = batch.player.uuid,
@@ -167,29 +157,17 @@ object StatsDatabaseService {
         stats: Map<String, Long>
     ) {
         val category = "minecraft:custom"
+        val statEntries = stats.map { (key, value) -> StatEntry(category, key, value) }
 
         suspendTransaction {
-            PlayersTable.upsert(onUpdateExclude = listOf(PlayersTable.dataVersion)) {
-                it[uuid] = playerUuid
-                it[name] = playerName
-                it[dataVersion] = 0
-                it[updatedAt] = CurrentTimestamp
-            }
-
-            StatCategoriesTable.batchInsert(listOf(category), ignore = true) { cat ->
-                this[StatCategoriesTable.name] = cat
-            }
-
-            StatKeysTable.batchInsert(stats.keys, ignore = true) { key ->
-                this[StatKeysTable.name] = key
-            }
+            ensurePlayerAndDimensions(playerUuid, playerName, 0, statEntries, excludeDataVersionOnUpdate = true)
 
             // Custom stats are also inserted as diff entries
-            PlayerStatsTable.batchInsert(stats.entries.toList()) { (key, value) ->
+            PlayerStatsTable.batchInsert(statEntries) { entry ->
                 this[PlayerStatsTable.playerUuid] = playerUuid
-                this[PlayerStatsTable.categoryName] = category
-                this[PlayerStatsTable.statKeyName] = key
-                this[PlayerStatsTable.value] = value
+                this[PlayerStatsTable.categoryName] = entry.category
+                this[PlayerStatsTable.statKeyName] = entry.key
+                this[PlayerStatsTable.value] = entry.value
                 this[PlayerStatsTable.serverName] = StatsInstance.serverName
             }
         }

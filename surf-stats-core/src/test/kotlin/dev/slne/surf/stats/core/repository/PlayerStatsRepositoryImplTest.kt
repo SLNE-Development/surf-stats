@@ -42,12 +42,13 @@ class PlayerStatsRepositoryImplTest {
     }
 
     @Test
-    fun `should return null for non-existent player`() = runTest {
+    fun `should return empty stats for non-existent player`() = runTest {
         val uuid = UUID.randomUUID()
 
         val result = PlayerStatsRepository.loadStats(uuid)
 
-        assertNull(result)
+        assertNotNull(result)
+        assertTrue(result?.stats?.isEmpty() == true)
     }
 
     @Test
@@ -67,10 +68,11 @@ class PlayerStatsRepositoryImplTest {
         )
         val result = PlayerStatsRepository.loadAllStats(players)
 
-        assertEquals(2, result.size)
+        assertEquals(3, result.size)
         assertTrue(result.any { it.uuid == uuid1 })
         assertTrue(result.any { it.uuid == uuid2 })
-        assertFalse(result.any { it.uuid == uuid3 })
+        assertTrue(result.any { it.uuid == uuid3 })
+        assertTrue(result.first { it.uuid == uuid3 }.stats.isEmpty())
     }
 
     @Test
