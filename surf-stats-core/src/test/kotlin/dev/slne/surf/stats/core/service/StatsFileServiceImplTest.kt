@@ -87,13 +87,16 @@ class StatsFileServiceImplTest {
     }
 
     @Test
-    fun `should return failure for non-existent file`() = runTest {
+    fun `should return empty stats for non-existent file`() = runTest {
         val uuid = UUID.randomUUID()
 
         val result = StatsFileService.loadStatistics(uuid)
 
-        assertTrue(result.isFailure)
-        assertTrue(result.exceptionOrNull() is NoSuchElementException)
+        assertTrue(result.isSuccess)
+        val stats = result.getOrNull()
+        assertNotNull(stats)
+        assertEquals(uuid, stats?.uuid)
+        assertTrue(stats?.stats?.isEmpty() == true)
     }
 
     @Test
@@ -127,7 +130,8 @@ class StatsFileServiceImplTest {
         assertEquals(3, results.size)
         assertTrue(results[uuid1]?.isSuccess == true)
         assertTrue(results[uuid2]?.isSuccess == true)
-        assertTrue(results[uuid3]?.isFailure == true)
+        assertTrue(results[uuid3]?.isSuccess == true)
+        assertTrue(results[uuid3]?.getOrNull()?.stats?.isEmpty() == true)
 
         // Verify player names are preserved
         assertEquals("Player1", results[uuid1]?.getOrNull()?.name)

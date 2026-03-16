@@ -14,6 +14,7 @@ import kotlinx.coroutines.delay
 import kotlinx.coroutines.isActive
 import org.bukkit.entity.Player
 import org.bukkit.plugin.java.JavaPlugin
+import java.util.*
 import kotlin.time.Duration.Companion.minutes
 
 val plugin get() = JavaPlugin.getPlugin(SurfStatsPlugin::class.java)
@@ -46,10 +47,7 @@ class SurfStatsPlugin : SuspendingJavaPlugin() {
         log.atWarning().log("Processing final stats for ${trackedPlayers.size} players on server shutdown")
 
         if (trackedPlayers.isNotEmpty()) {
-            // Force Minecraft to flush stats JSON files to disk
-            trackedPlayers.keys.forEach { uuid ->
-                server.getPlayer(uuid)?.let { flushPlayerStats(it) }
-            }
+            flushAllPlayerStats(trackedPlayers.keys)
             SurfStatsApi.processAllPlayerStats(trackedPlayers)
         }
 
@@ -83,23 +81,12 @@ class SurfStatsPlugin : SuspendingJavaPlugin() {
         val interval = SAVE_INTERVAL
 
         diffSaveJob = launch {
-            delay(interval) // initial delay before first save
+            delay(interval)
             while (isActive) {
-                val trackedPlayers = StatisticsManagerService.snapshotMap
-                    .mapValues { (_, stats) -> stats.name }
-
-                if (trackedPlayers.isNotEmpty()) {
-                    runCatching {
-                        // Force Minecraft to flush stats JSON files to disk
-                        trackedPlayers.keys.forEach { uuid ->
-                            server.getPlayer(uuid)?.let { flushPlayerStats(it) }
-                        }
-
-                        log.atInfo().log("Saving diffs for ${trackedPlayers.size} players")
-                        SurfStatsApi.processAllPlayerStats(trackedPlayers)
-                    }.onFailure { e ->
-                        log.atSevere().withCause(e).log("Failed to save periodic stat diffs")
-                    }
+                runCatching {
+                    saveTrackedPlayerStats()
+                }.onFailure { e ->
+                    log.atSevere().withCause(e).log("Failed to save periodic stat diffs")
                 }
                 delay(interval)
             }
@@ -108,6 +95,27 @@ class SurfStatsPlugin : SuspendingJavaPlugin() {
         log.atInfo().log("Periodic diff save started (interval: ${interval.inWholeMinutes}m)")
     }
 
+    private suspend fun saveTrackedPlayerStats() {
+        val trackedPlayers = StatisticsManagerService.snapshotMap
+            .mapValues { (_, stats) -> stats.name }
+
+        if (trackedPlayers.isNotEmpty()) {
+            flushAllPlayerStats(trackedPlayers.keys)
+            log.atInfo().log("Saving diffs for ${trackedPlayers.size} players")
+            SurfStatsApi.processAllPlayerStats(trackedPlayers)
+        }
+    }
+
+    private fun flushAllPlayerStats(playerUuids: Set<UUID>) {
+        playerUuids.forEach { uuid ->
+            server.getPlayer(uuid)?.let { flushPlayerStats(it) }
+        }
+    }
+
+    /**
+     * Forces Minecraft to write the player's stats JSON file to disk.
+     * Uses reflection to call CraftPlayer -> ServerPlayer -> ServerStatsCounter.save().
+     */
     private fun flushPlayerStats(player: Player) {
         try {
             val handle = player.javaClass.getMethod("getHandle").invoke(player)

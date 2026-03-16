@@ -36,29 +36,20 @@ class SurfStatsApiImpl() : SurfStatsApi {
 
     override suspend fun processPlayerStats(playerUuid: UUID, playerName: String): Result<PlayerStatsBatch> {
         return runCatching {
+            // Load & compute
             val diffs = StatisticsManagerService.computeDiffs(playerUuid, playerName)
             val clanUuid = playerUuid.findClanByPlayer()?.uuid
-
             val currentStats = PlayerStatsRepository.loadStats(playerUuid, playerName)
                 ?: PlayerStats.empty(playerUuid, playerName)
 
-            // Always save the actual stats
-            StatsDatabaseService.saveBatch(
-                PlayerStatsBatch(
-                    player = currentStats,
-                    serverName = StatsInstance.serverName,
-                )
-            )
-
+            // Save
+            saveCurrentStats(currentStats)
             if (diffs.isNotEmpty()) {
-                // This only saves diffs if there are any
-                StatsDatabaseService.saveDiffBatch(
-                    playerUuid = playerUuid,
-                    playerName = playerName,
-                    dataVersion = currentStats.dataVersion,
-                    diffs = diffs,
-                    clanUuid = clanUuid
-                )
+                saveDiffStats(playerUuid, playerName, currentStats.dataVersion, diffs, clanUuid)
+            }
+
+            // Update snapshot
+            if (diffs.isNotEmpty()) {
                 StatisticsManagerService.updateSnapshot(playerUuid, playerName)
             }
 
@@ -75,60 +66,8 @@ class SurfStatsApiImpl() : SurfStatsApi {
     }
 
     override suspend fun processAllPlayerStats(players: Map<UUID, String>): List<PlayerStatsBatch> = coroutineScope {
-        // Run actual stats saving and diff computation in parallel
-        val actualStatsJob = async {
-            val allCurrentStats = PlayerStatsRepository.loadAllStats(players)
-            val statBatches = allCurrentStats.map { stats ->
-                PlayerStatsBatch(
-                    player = stats,
-                    serverName = StatsInstance.serverName,
-                )
-            }
-
-            if (statBatches.isNotEmpty()) {
-                val failedUuids = StatsDatabaseService.saveBatches(statBatches)
-                if (failedUuids.isNotEmpty()) {
-                    log.atWarning().log("Failed to save actual stats for ${failedUuids.size}/${statBatches.size} players")
-                }
-            }
-        }
-
-        val diffJob = async {
-            val diffBatches = mutableListOf<PlayerStatsBatch>()
-            val diffsByPlayer = mutableMapOf<UUID, List<StatEntry>>()
-
-            for ((uuid, name) in players) {
-                val diffs = StatisticsManagerService.computeDiffs(uuid, name)
-                val clanUuid = uuid.findClanByPlayer()?.uuid
-
-                if (diffs.isNotEmpty()) {
-                    diffsByPlayer[uuid] = diffs
-                    diffBatches.add(
-                        PlayerStatsBatch(
-                            player = PlayerStats(uuid, name, 0, diffs),
-                            serverName = StatsInstance.serverName,
-                            clanUuid = clanUuid
-                        )
-                    )
-                }
-            }
-
-            if (diffBatches.isNotEmpty()) {
-                val failedUuids = StatsDatabaseService.saveDiffBatches(diffBatches, diffsByPlayer)
-                if (failedUuids.isNotEmpty()) {
-                    log.atWarning().log("Failed to save diff stats for ${failedUuids.size}/${diffBatches.size} players")
-                }
-
-                // Only update snapshots for players whose diffs were persisted successfully
-                for ((uuid, name) in players) {
-                    if (uuid !in failedUuids && uuid in diffsByPlayer) {
-                        StatisticsManagerService.updateSnapshot(uuid, name)
-                    }
-                }
-            }
-
-            diffBatches
-        }
+        val actualStatsJob = async { saveAllCurrentStats(players) }
+        val diffJob = async { computeAndSaveAllDiffs(players) }
 
         actualStatsJob.await()
         diffJob.await()
@@ -146,12 +85,89 @@ class SurfStatsApiImpl() : SurfStatsApi {
         StatsDatabaseService.saveCustomStats(playerUuid, playerName, stats)
     }
 
+    @Deprecated("Use PlayerStats.categories() directly", ReplaceWith("stats.categories()"))
     override fun extractCategories(stats: PlayerStats): Set<String> {
         return stats.categories()
     }
 
+    @Deprecated("Use PlayerStats.statKeys() directly", ReplaceWith("stats.statKeys()"))
     override fun extractStatKeys(stats: PlayerStats): Set<String> {
         return stats.statKeys()
+    }
+
+    private suspend fun saveCurrentStats(stats: PlayerStats) {
+        // I/O
+        StatsDatabaseService.saveBatch(
+            PlayerStatsBatch(
+                player = stats,
+                serverName = StatsInstance.serverName,
+            )
+        )
+    }
+
+    private suspend fun saveDiffStats(
+        playerUuid: UUID,
+        playerName: String,
+        dataVersion: Int,
+        diffs: List<StatEntry>,
+        clanUuid: UUID?
+    ) {
+        // I/O
+        StatsDatabaseService.saveDiffBatch(
+            playerUuid = playerUuid,
+            playerName = playerName,
+            dataVersion = dataVersion,
+            diffs = diffs,
+            clanUuid = clanUuid
+        )
+    }
+
+    private suspend fun saveAllCurrentStats(players: Map<UUID, String>) {
+        // I/O
+        val allCurrentStats = PlayerStatsRepository.loadAllStats(players)
+        val statBatches = allCurrentStats.map { stats ->
+            PlayerStatsBatch(
+                player = stats,
+                serverName = StatsInstance.serverName,
+            )
+        }
+
+        if (statBatches.isNotEmpty()) {
+            val failedUuids = StatsDatabaseService.saveBatches(statBatches)
+            if (failedUuids.isNotEmpty()) {
+                log.atWarning().log("Failed to save actual stats for ${failedUuids.size}/${statBatches.size} players")
+            }
+        }
+    }
+
+    private suspend fun computeAndSaveAllDiffs(players: Map<UUID, String>): List<PlayerStatsBatch> {
+        val diffBatches = players.mapNotNull { (uuid, name) ->
+            val diffs = StatisticsManagerService.computeDiffs(uuid, name)
+            if (diffs.isEmpty()) return@mapNotNull null
+
+            val clanUuid = uuid.findClanByPlayer()?.uuid
+            PlayerStatsBatch(
+                player = PlayerStats(uuid, name, 0, diffs),
+                serverName = StatsInstance.serverName,
+                clanUuid = clanUuid
+            )
+        }
+
+        if (diffBatches.isNotEmpty()) {
+            val failedUuids = StatsDatabaseService.saveDiffBatches(diffBatches)
+            if (failedUuids.isNotEmpty()) {
+                log.atWarning().log("Failed to save diff stats for ${failedUuids.size}/${diffBatches.size} players")
+            }
+
+            // Only update snapshots for players whose diffs were persisted successfully
+            for ((uuid, name) in players) {
+                if (uuid !in failedUuids && diffBatches.any { it.player.uuid == uuid }) {
+                    StatisticsManagerService.updateSnapshot(uuid, name)
+                }
+            }
+        }
+
+        return diffBatches
     }
 }
 

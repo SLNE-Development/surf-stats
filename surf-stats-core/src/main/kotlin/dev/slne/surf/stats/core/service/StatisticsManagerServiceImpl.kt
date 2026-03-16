@@ -29,7 +29,7 @@ class StatisticsManagerServiceImpl : StatisticsManagerService {
         }
 
         val snapshot = _snapshotMap[uuid] ?: PlayerStats.empty(uuid, name)
-        val diffs = computeStatDiffs(snapshot, currentStats)
+        val diffs = diffEntries(snapshot, currentStats)
         return diffs
     }
 
@@ -38,7 +38,7 @@ class StatisticsManagerServiceImpl : StatisticsManagerService {
         _snapshotMap[uuid] = currentStats
     }
 
-    private fun computeStatDiffs(snapshot: PlayerStats, current: PlayerStats): List<StatEntry> {
+    internal fun diffEntries(snapshot: PlayerStats, current: PlayerStats): List<StatEntry> {
         val snapshotLookup = snapshot.stats.associateBy { it.category to it.key }
 
         return current.stats.mapNotNull { entry ->
