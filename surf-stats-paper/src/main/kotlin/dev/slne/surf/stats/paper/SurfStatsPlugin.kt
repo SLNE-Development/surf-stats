@@ -4,6 +4,7 @@ import com.github.shynixn.mccoroutine.folia.SuspendingJavaPlugin
 import com.github.shynixn.mccoroutine.folia.launch
 import dev.slne.surf.stats.api.StatsInstance
 import dev.slne.surf.stats.api.SurfStatsApi
+import dev.slne.surf.stats.api.service.StatisticsManagerService
 import dev.slne.surf.stats.core.service.StatsFileService
 import dev.slne.surf.stats.paper.listener.PlayerStatsListener
 import dev.slne.surf.surfapi.bukkit.api.event.register
@@ -11,6 +12,7 @@ import dev.slne.surf.surfapi.core.api.util.logger
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.isActive
+import org.bukkit.entity.Player
 import org.bukkit.plugin.java.JavaPlugin
 import kotlin.time.Duration.Companion.minutes
 
@@ -39,11 +41,16 @@ class SurfStatsPlugin : SuspendingJavaPlugin() {
     override suspend fun onDisableAsync() {
         diffSaveJob?.cancel()
 
-        val onlinePlayers = server.onlinePlayers.associate { it.uniqueId to it.name }
-        log.atWarning().log("Processing final stats for ${onlinePlayers.size} players on server shutdown")
+        val trackedPlayers = StatisticsManagerService.snapshotMap
+            .mapValues { (_, stats) -> stats.name }
+        log.atWarning().log("Processing final stats for ${trackedPlayers.size} players on server shutdown")
 
-        if (onlinePlayers.isNotEmpty()) {
-            SurfStatsApi.processAllPlayerStats(onlinePlayers)
+        if (trackedPlayers.isNotEmpty()) {
+            // Force Minecraft to flush stats JSON files to disk
+            trackedPlayers.keys.forEach { uuid ->
+                server.getPlayer(uuid)?.let { flushPlayerStats(it) }
+            }
+            SurfStatsApi.processAllPlayerStats(trackedPlayers)
         }
 
         StatsInstance.onDisable()
@@ -78,10 +85,18 @@ class SurfStatsPlugin : SuspendingJavaPlugin() {
         diffSaveJob = launch {
             delay(interval) // initial delay before first save
             while (isActive) {
-                val players = server.onlinePlayers.associate { it.uniqueId to it.name }
-                if (players.isNotEmpty()) {
+                val trackedPlayers = StatisticsManagerService.snapshotMap
+                    .mapValues { (_, stats) -> stats.name }
+
+                if (trackedPlayers.isNotEmpty()) {
                     runCatching {
-                        SurfStatsApi.processAllPlayerStats(players)
+                        // Force Minecraft to flush stats JSON files to disk
+                        trackedPlayers.keys.forEach { uuid ->
+                            server.getPlayer(uuid)?.let { flushPlayerStats(it) }
+                        }
+
+                        log.atInfo().log("Saving diffs for ${trackedPlayers.size} players")
+                        SurfStatsApi.processAllPlayerStats(trackedPlayers)
                     }.onFailure { e ->
                         log.atSevere().withCause(e).log("Failed to save periodic stat diffs")
                     }
@@ -91,6 +106,16 @@ class SurfStatsPlugin : SuspendingJavaPlugin() {
         }
 
         log.atInfo().log("Periodic diff save started (interval: ${interval.inWholeMinutes}m)")
+    }
+
+    private fun flushPlayerStats(player: Player) {
+        try {
+            val handle = player.javaClass.getMethod("getHandle").invoke(player)
+            val stats = handle.javaClass.getMethod("getStats").invoke(handle)
+            stats.javaClass.getMethod("save").invoke(stats)
+        } catch (e: Exception) {
+            log.atWarning().withCause(e).log("Failed to flush stats for ${player.name}")
+        }
     }
 
     companion object {

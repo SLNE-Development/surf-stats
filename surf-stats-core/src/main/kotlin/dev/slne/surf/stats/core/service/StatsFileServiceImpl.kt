@@ -47,7 +47,7 @@ object StatsFileServiceImpl : StatsFileService {
                 val filePath = getStatsFilePath(playerUuid)
 
                 if (!filePath.exists()) {
-                    throw NoSuchElementException("Stats file not found for player: $playerUuid")
+                    return@withContext Result.success(PlayerStats.empty(playerUuid, playerName))
                 }
 
                 val content = filePath.readText()
