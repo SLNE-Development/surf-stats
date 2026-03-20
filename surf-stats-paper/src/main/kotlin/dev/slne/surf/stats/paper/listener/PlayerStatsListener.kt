@@ -1,7 +1,7 @@
 package dev.slne.surf.stats.paper.listener
 
 import com.github.shynixn.mccoroutine.folia.launch
-import dev.slne.surf.stats.core.api.surfStatsApiImpl
+import dev.slne.surf.stats.core.client.surfStatsApiImpl
 import dev.slne.surf.stats.paper.plugin
 import kotlinx.coroutines.delay
 import org.bukkit.event.EventHandler
@@ -37,12 +37,11 @@ object PlayerStatsListener : Listener {
     fun onPlayerQuit(event: PlayerQuitEvent) {
         val player = event.player
         val uuid = player.uniqueId
-        val name = player.name
 
         plugin.launch {
             // Wait for Minecraft to flush the stats JSON file to disk before reading it
             delay(1000)
-            surfStatsApiImpl.onPlayerQuit(uuid, name)
+            surfStatsApiImpl.onPlayerQuit(uuid)
         }
     }
 }

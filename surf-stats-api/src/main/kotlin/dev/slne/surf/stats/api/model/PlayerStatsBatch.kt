@@ -1,13 +1,17 @@
 package dev.slne.surf.stats.api.model
 
-import java.util.UUID
+import dev.slne.surf.surfapi.core.api.serializer.java.uuid.SerializableUUID
+import kotlinx.serialization.Serializable
 
 /**
  * Represents a batch of player stats ready for database insertion.
  * Includes server context and clan assignment for the player_stats table.
  */
+@Serializable
 data class PlayerStatsBatch(
-    val player: PlayerStats,
+    val playerUuid: SerializableUUID,
+    val stats: PlayerStats,
     val serverName: String,
-    val clanUuid: UUID? = null
+    val clanUuid: SerializableUUID? = null,
+    val dataVersion: Int = 0
 )

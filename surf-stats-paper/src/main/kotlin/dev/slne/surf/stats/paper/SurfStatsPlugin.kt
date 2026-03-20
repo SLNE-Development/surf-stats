@@ -2,10 +2,11 @@ package dev.slne.surf.stats.paper
 
 import com.github.shynixn.mccoroutine.folia.SuspendingJavaPlugin
 import com.github.shynixn.mccoroutine.folia.launch
-import dev.slne.surf.stats.api.StatsInstance
+import dev.slne.surf.core.api.common.SurfCoreApi
 import dev.slne.surf.stats.api.SurfStatsApi
-import dev.slne.surf.stats.api.service.StatisticsManagerService
-import dev.slne.surf.stats.core.service.StatsFileService
+import dev.slne.surf.stats.core.client.json.StatsFileService
+import dev.slne.surf.stats.core.client.service.StatisticsManagerService
+import dev.slne.surf.stats.core.client.statsInstance
 import dev.slne.surf.stats.paper.listener.PlayerStatsListener
 import dev.slne.surf.surfapi.bukkit.api.event.register
 import dev.slne.surf.surfapi.core.api.util.logger
@@ -28,11 +29,13 @@ class SurfStatsPlugin : SuspendingJavaPlugin() {
     private var diffSaveJob: Job? = null
 
     override suspend fun onLoadAsync() {
-        StatsInstance.onLoad()
+        println("Before onLoad")
+        statsInstance.onLoad()
+        println("After onLoad")
     }
 
     override suspend fun onEnableAsync() {
-        StatsInstance.onEnable()
+        statsInstance.onEnable()
 
         initializeServices()
         registerListeners()
@@ -43,15 +46,13 @@ class SurfStatsPlugin : SuspendingJavaPlugin() {
         diffSaveJob?.cancel()
 
         val trackedPlayers = StatisticsManagerService.snapshotMap
-            .mapValues { (_, stats) -> stats.name }
+            .map { entry -> entry.playerUuid }.toSet()
+
         log.atWarning().log("Processing final stats for ${trackedPlayers.size} players on server shutdown")
 
-        if (trackedPlayers.isNotEmpty()) {
-            flushAllPlayerStats(trackedPlayers.keys)
-            SurfStatsApi.processAllPlayerStats(trackedPlayers)
-        }
+        saveTrackedPlayerStats()
 
-        StatsInstance.onDisable()
+        statsInstance.onDisable()
     }
 
     private suspend fun initializeServices() {
@@ -64,7 +65,7 @@ class SurfStatsPlugin : SuspendingJavaPlugin() {
 
         // Debug Server Info
         log.atInfo().log(
-            "Server name: ${StatsInstance.serverName}, display name: ${StatsInstance.serverDisplayName}"
+            "Server name: ${SurfCoreApi.getCurrentServerName()}, display name: ${SurfCoreApi.getCurrentServerDisplayName()}"
         )
 
         // Initialize file service
@@ -97,11 +98,12 @@ class SurfStatsPlugin : SuspendingJavaPlugin() {
 
     private suspend fun saveTrackedPlayerStats() {
         val trackedPlayers = StatisticsManagerService.snapshotMap
-            .mapValues { (_, stats) -> stats.name }
+            .map { entry -> entry.playerUuid }.toSet()
 
         if (trackedPlayers.isNotEmpty()) {
-            flushAllPlayerStats(trackedPlayers.keys)
             log.atInfo().log("Saving diffs for ${trackedPlayers.size} players")
+
+            flushAllPlayerStats(trackedPlayers)
             SurfStatsApi.processAllPlayerStats(trackedPlayers)
         }
     }
