@@ -11,6 +11,7 @@ interface StatisticsManagerService {
 
     suspend fun updateSnapshot(uuid: UUID)
 
+    suspend fun trackPlayer(uuid: UUID)
     fun untrackPlayer(uuid: UUID)
 
     fun isTracking(uuid: UUID): Boolean

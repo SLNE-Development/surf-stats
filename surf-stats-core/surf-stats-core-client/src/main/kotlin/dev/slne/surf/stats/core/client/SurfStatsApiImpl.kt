@@ -31,6 +31,8 @@ class SurfStatsApiImpl : SurfStatsApi {
                 playerName = playerName
             )
         )
+
+        StatisticsManagerService.trackPlayer(playerUuid)
     }
 
     suspend fun onPlayerQuit(playerUuid: UUID) {

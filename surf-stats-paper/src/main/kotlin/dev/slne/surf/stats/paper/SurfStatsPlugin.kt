@@ -105,8 +105,6 @@ class SurfStatsPlugin : SuspendingJavaPlugin() {
 
             flushAllPlayerStats(trackedPlayers)
             SurfStatsApi.processAllPlayerStats(trackedPlayers)
-        } else {
-            log.atInfo().log("No players to save diffs for")
         }
     }
 
