@@ -7,6 +7,7 @@ import com.sksamuel.aedile.core.asLoadingCache
 import dev.slne.surf.stats.api.model.PlayerStats
 import dev.slne.surf.stats.api.model.StatEntry
 import dev.slne.surf.stats.core.client.repository.PlayerStatsRepository
+import dev.slne.surf.surfapi.core.api.util.logger
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import java.util.*
 
@@ -14,6 +15,7 @@ object StatisticsManagerServiceImpl : StatisticsManagerService {
     private val _snapshotMap = Caffeine.newBuilder()
         .maximumSize(10_000)
         .asLoadingCache<UUID, PlayerStats> { uuid ->
+            logger().atInfo().log("Loading snapshot for $uuid")
             PlayerStatsRepository.loadStats(uuid)
         }
 
@@ -24,6 +26,7 @@ object StatisticsManagerServiceImpl : StatisticsManagerService {
 
     override suspend fun computeDiffs(uuid: UUID): PlayerStats {
         val currentStats = PlayerStatsRepository.loadStats(uuid)
+        logger().atInfo().log("Computing diffs for $uuid")
         val snapshot = _snapshotMap.get(uuid)
         val diffs = diffEntries(snapshot, currentStats)
 

@@ -84,6 +84,7 @@ class SurfStatsPlugin : SuspendingJavaPlugin() {
             delay(interval)
             while (isActive) {
                 runCatching {
+                    log.atInfo().log("Saving periodic stat diffs")
                     saveTrackedPlayerStats()
                 }.onFailure { e ->
                     log.atSevere().withCause(e).log("Failed to save periodic stat diffs")
@@ -104,6 +105,8 @@ class SurfStatsPlugin : SuspendingJavaPlugin() {
 
             flushAllPlayerStats(trackedPlayers)
             SurfStatsApi.processAllPlayerStats(trackedPlayers)
+        } else {
+            log.atInfo().log("No players to save diffs for")
         }
     }
 
