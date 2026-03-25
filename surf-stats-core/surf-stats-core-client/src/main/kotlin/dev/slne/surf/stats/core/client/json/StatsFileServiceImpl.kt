@@ -1,6 +1,6 @@
 package dev.slne.surf.stats.core.client.json
 
-import dev.slne.surf.core.api.common.SurfCoreApi
+import dev.slne.surf.core.api.common.surfCoreApi
 import dev.slne.surf.stats.api.model.PlayerStats
 import dev.slne.surf.surfapi.core.api.util.logger
 import kotlinx.coroutines.*
@@ -45,7 +45,7 @@ object StatsFileServiceImpl : StatsFileService {
                     return@withContext Result.success(
                         PlayerStats(
                             playerUuid = playerUuid,
-                            serverName = SurfCoreApi.getCurrentServerName()
+                            serverName = surfCoreApi.getCurrentServerName()
                         )
                     )
                 }
@@ -55,7 +55,7 @@ object StatsFileServiceImpl : StatsFileService {
 
                 val playerStats = PlayerStats(
                     playerUuid = playerUuid,
-                    serverName = SurfCoreApi.getCurrentServerName(),
+                    serverName = surfCoreApi.getCurrentServerName(),
                     stats = statsModel.toStatEntries()
                 )
 

@@ -2,7 +2,7 @@ package dev.slne.surf.stats.core.client
 
 import com.google.auto.service.AutoService
 import dev.slne.clan.api.clan.findClanByPlayer
-import dev.slne.surf.core.api.common.SurfCoreApi
+import dev.slne.surf.core.api.common.surfCoreApi
 import dev.slne.surf.stats.api.SurfStatsApi
 import dev.slne.surf.stats.api.model.PlayerStats
 import dev.slne.surf.stats.api.model.PlayerStatsBatch
@@ -21,7 +21,7 @@ import java.util.*
  * and stores each diff as a new database entry with clan assignment and timestamp.
  */
 @AutoService(SurfStatsApi::class)
-class SurfStatsApiImpl() : SurfStatsApi {
+class SurfStatsApiImpl : SurfStatsApi {
     private val log = logger()
 
     suspend fun onPlayerJoin(playerUuid: UUID, playerName: String) {
@@ -93,7 +93,7 @@ class SurfStatsApiImpl() : SurfStatsApi {
                     PlayerStatsBatch(
                         playerUuid = playerUuid,
                         stats = stats,
-                        serverName = SurfCoreApi.getCurrentServerName(),
+                        serverName = surfCoreApi.getCurrentServerName(),
                         clanUuid = null
                     )
                 ),
@@ -113,7 +113,7 @@ class SurfStatsApiImpl() : SurfStatsApi {
                     PlayerStatsBatch(
                         playerUuid = playerUuid,
                         stats = diffs,
-                        serverName = SurfCoreApi.getCurrentServerName(),
+                        serverName = surfCoreApi.getCurrentServerName(),
                         clanUuid = clanUuid
                     )
                 ),
@@ -128,7 +128,7 @@ class SurfStatsApiImpl() : SurfStatsApi {
             PlayerStatsBatch(
                 playerUuid = entry.playerUuid,
                 stats = entry,
-                serverName = SurfCoreApi.getCurrentServerName(),
+                serverName = surfCoreApi.getCurrentServerName(),
                 clanUuid = entry.playerUuid.findClanByPlayer()?.uuid
             )
         }
@@ -142,7 +142,8 @@ class SurfStatsApiImpl() : SurfStatsApi {
             ).value
 
             if (failedUuids.isNotEmpty()) {
-                log.atWarning().log("Failed to save actual stats for ${failedUuids.size}/${statBatches.size} players")
+                log.atWarning()
+                    .log("Failed to save actual stats for ${failedUuids.size}/${statBatches.size} players")
             }
         }
     }
@@ -158,7 +159,7 @@ class SurfStatsApiImpl() : SurfStatsApi {
             PlayerStatsBatch(
                 playerUuid = uuid,
                 stats = diffs,
-                serverName = SurfCoreApi.getCurrentServerName(),
+                serverName = surfCoreApi.getCurrentServerName(),
                 clanUuid = clanUuid
             )
         }
@@ -172,7 +173,8 @@ class SurfStatsApiImpl() : SurfStatsApi {
             ).value
 
             if (failedUuids.isNotEmpty()) {
-                log.atWarning().log("Failed to save diff stats for ${failedUuids.size}/${diffBatches.size} players")
+                log.atWarning()
+                    .log("Failed to save diff stats for ${failedUuids.size}/${diffBatches.size} players")
             }
 
             // Only update snapshots for players whose diffs were persisted successfully

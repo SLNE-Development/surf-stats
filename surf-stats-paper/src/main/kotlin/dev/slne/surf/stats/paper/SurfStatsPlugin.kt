@@ -2,7 +2,7 @@ package dev.slne.surf.stats.paper
 
 import com.github.shynixn.mccoroutine.folia.SuspendingJavaPlugin
 import com.github.shynixn.mccoroutine.folia.launch
-import dev.slne.surf.core.api.common.SurfCoreApi
+import dev.slne.surf.core.api.common.surfCoreApi
 import dev.slne.surf.stats.api.SurfStatsApi
 import dev.slne.surf.stats.core.client.json.StatsFileService
 import dev.slne.surf.stats.core.client.service.StatisticsManagerService
@@ -29,9 +29,7 @@ class SurfStatsPlugin : SuspendingJavaPlugin() {
     private var diffSaveJob: Job? = null
 
     override suspend fun onLoadAsync() {
-        println("Before onLoad")
         statsInstance.onLoad()
-        println("After onLoad")
     }
 
     override suspend fun onEnableAsync() {
@@ -48,7 +46,8 @@ class SurfStatsPlugin : SuspendingJavaPlugin() {
         val trackedPlayers = StatisticsManagerService.snapshotMap
             .map { entry -> entry.playerUuid }.toSet()
 
-        log.atWarning().log("Processing final stats for ${trackedPlayers.size} players on server shutdown")
+        log.atWarning()
+            .log("Processing final stats for ${trackedPlayers.size} players on server shutdown")
 
         saveTrackedPlayerStats()
 
@@ -65,7 +64,7 @@ class SurfStatsPlugin : SuspendingJavaPlugin() {
 
         // Debug Server Info
         log.atInfo().log(
-            "Server name: ${SurfCoreApi.getCurrentServerName()}, display name: ${SurfCoreApi.getCurrentServerDisplayName()}"
+            "Server name: ${surfCoreApi.getCurrentServerName()}, display name: ${surfCoreApi.getCurrentServerDisplayName()}"
         )
 
         // Initialize file service

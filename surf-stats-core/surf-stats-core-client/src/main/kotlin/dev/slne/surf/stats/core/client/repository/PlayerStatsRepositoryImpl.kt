@@ -1,6 +1,6 @@
 package dev.slne.surf.stats.core.client.repository
 
-import dev.slne.surf.core.api.common.SurfCoreApi
+import dev.slne.surf.core.api.common.surfCoreApi
 import dev.slne.surf.stats.api.model.PlayerStats
 import dev.slne.surf.stats.core.client.json.StatsFileService
 import dev.slne.surf.surfapi.core.api.util.logger
@@ -14,7 +14,12 @@ object PlayerStatsRepositoryImpl : PlayerStatsRepository {
 
     override suspend fun loadStats(uuid: UUID): PlayerStats {
         return StatsFileService.loadStatistics(uuid)
-            .getOrElse { PlayerStats(playerUuid = uuid, serverName = SurfCoreApi.getCurrentServerName()) }
+            .getOrElse {
+                PlayerStats(
+                    playerUuid = uuid,
+                    serverName = surfCoreApi.getCurrentServerName()
+                )
+            }
     }
 
     override suspend fun loadAllStats(uuids: Set<UUID>): List<PlayerStats> {
