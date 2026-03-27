@@ -7,6 +7,7 @@ import dev.slne.surf.stats.api.SurfStatsApi
 import dev.slne.surf.stats.core.client.json.StatsFileService
 import dev.slne.surf.stats.core.client.service.StatisticsManagerService
 import dev.slne.surf.stats.core.client.statsInstance
+import dev.slne.surf.stats.paper.commands.statsCommand
 import dev.slne.surf.stats.paper.listener.PlayerStatsListener
 import dev.slne.surf.surfapi.bukkit.api.event.register
 import dev.slne.surf.surfapi.core.api.util.logger
@@ -38,6 +39,8 @@ class SurfStatsPlugin : SuspendingJavaPlugin() {
         initializeServices()
         registerListeners()
         startPeriodicDiffSave()
+
+        statsCommand()
     }
 
     override suspend fun onDisableAsync() {

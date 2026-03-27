@@ -1,17 +1,24 @@
 package dev.slne.surf.stats.microservice.db
 
+import dev.slne.surf.database.libs.org.jetbrains.exposed.v1.core.ResultRow
+import dev.slne.surf.database.libs.org.jetbrains.exposed.v1.core.and
+import dev.slne.surf.database.libs.org.jetbrains.exposed.v1.core.eq
 import dev.slne.surf.database.libs.org.jetbrains.exposed.v1.javatime.CurrentTimestamp
-import dev.slne.surf.database.libs.org.jetbrains.exposed.v1.r2dbc.batchInsert
-import dev.slne.surf.database.libs.org.jetbrains.exposed.v1.r2dbc.batchUpsert
+import dev.slne.surf.database.libs.org.jetbrains.exposed.v1.r2dbc.*
 import dev.slne.surf.database.libs.org.jetbrains.exposed.v1.r2dbc.transactions.suspendTransaction
-import dev.slne.surf.database.libs.org.jetbrains.exposed.v1.r2dbc.upsert
+import dev.slne.surf.stats.api.model.OptOutInfo
+import dev.slne.surf.stats.api.model.OptOutType
 import dev.slne.surf.stats.api.model.PlayerStats
 import dev.slne.surf.stats.api.model.PlayerStatsBatch
 import dev.slne.surf.stats.microservice.db.tables.*
+import dev.slne.surf.surfapi.core.api.messages.adventure.key
+import dev.slne.surf.surfapi.core.api.serializer.java.uuid.SerializableUUID
 import dev.slne.surf.surfapi.core.api.util.logger
 import kotlinx.coroutines.async
 import kotlinx.coroutines.awaitAll
 import kotlinx.coroutines.coroutineScope
+import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.flow.toList
 import java.util.*
 
 object StatsDatabaseService {
@@ -25,6 +32,48 @@ object StatsDatabaseService {
             it[updatedAt] = CurrentTimestamp
         }
     }
+
+    suspend fun toggleOptOutStatistic(
+        playerUuid: SerializableUUID,
+        categoryName: String,
+        statisticName: String,
+        type: OptOutType
+    ) = suspendTransaction {
+        val categoryNameKey = key(categoryName)
+        val statisticNameKey = key(statisticName)
+
+        if (type == OptOutType.ON) {
+            PlayerStatOptOuts.insertIgnore {
+                it[this.playerUuid] = playerUuid
+                it[this.categoryName] = categoryNameKey
+                it[this.statKeyName] = statisticNameKey
+            }
+        } else {
+            PlayerStatOptOuts.deleteWhere {
+                (PlayerStatOptOuts.playerUuid eq playerUuid) and
+                        (PlayerStatOptOuts.categoryName eq categoryNameKey) and
+                        (PlayerStatOptOuts.statKeyName eq statisticNameKey)
+            }
+        }
+    }
+
+    suspend fun getOptOut(
+        playerUuid: SerializableUUID
+    ) = suspendTransaction {
+        PlayerStatOptOuts.selectAll().where { PlayerStatOptOuts.playerUuid eq playerUuid }
+            .map { it.toOptOutInfo() }
+            .toList()
+    }
+
+    private fun ResultRow.toOptOutInfo(): OptOutInfo {
+        return OptOutInfo(
+            playerUuid = this[PlayerStatOptOuts.playerUuid],
+            categoryName = this[PlayerStatOptOuts.categoryName],
+            statisticName = this[PlayerStatOptOuts.statKeyName],
+            type = OptOutType.ON
+        )
+    }
+
 
     private suspend fun ensureDimensions(
         stats: PlayerStats,

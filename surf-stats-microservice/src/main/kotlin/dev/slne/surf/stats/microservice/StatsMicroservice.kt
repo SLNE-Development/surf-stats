@@ -4,6 +4,7 @@ import com.google.auto.service.AutoService
 import dev.slne.surf.database.DatabaseApi
 import dev.slne.surf.microservice.api.microservice.Microservice
 import dev.slne.surf.rabbitmq.api.ServerRabbitMQApi
+import dev.slne.surf.stats.microservice.handler.OptOutPacketHandler
 import dev.slne.surf.stats.microservice.handler.PlayerPacketHandler
 import dev.slne.surf.stats.microservice.handler.ServerPacketHandler
 import dev.slne.surf.stats.microservice.handler.StatsPacketHandler
@@ -20,6 +21,7 @@ class StatsMicroservice : Microservice() {
         rabbitApi.registerRequestHandler(StatsPacketHandler)
         rabbitApi.registerRequestHandler(ServerPacketHandler)
         rabbitApi.registerRequestHandler(PlayerPacketHandler)
+        rabbitApi.registerRequestHandler(OptOutPacketHandler)
         rabbitApi.freezeAndConnect()
     }
 
