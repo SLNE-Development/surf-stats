@@ -7,11 +7,12 @@ import dev.slne.surf.rabbitmq.api.ServerRabbitMQApi
 import dev.slne.surf.stats.microservice.handler.PlayerPacketHandler
 import dev.slne.surf.stats.microservice.handler.ServerPacketHandler
 import dev.slne.surf.stats.microservice.handler.StatsPacketHandler
+import java.nio.file.Path
 import kotlin.io.path.Path
 
 @AutoService(Microservice::class)
 class StatsMicroservice : Microservice() {
-    private val dataPath = Path("config")
+    override val dataPath: Path = Path("config")
 
     private val databaseApi = DatabaseApi.create(dataPath)
     private val rabbitApi = ServerRabbitMQApi.create("surf-stats", dataPath)
