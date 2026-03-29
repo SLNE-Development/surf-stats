@@ -13,5 +13,8 @@ plugins {
 }
 
 include("surf-stats-api")
-include("surf-stats-core")
+include("surf-stats-core:surf-stats-core-common")
+include("surf-stats-core:surf-stats-core-client")
+
 include("surf-stats-paper")
+include("surf-stats-microservice")
