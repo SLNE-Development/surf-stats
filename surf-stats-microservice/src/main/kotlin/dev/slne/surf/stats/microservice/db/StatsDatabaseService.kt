@@ -20,6 +20,7 @@ import kotlinx.coroutines.awaitAll
 import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.toList
+import kotlinx.coroutines.flow.toSet
 import java.util.*
 
 object StatsDatabaseService {
@@ -75,13 +76,11 @@ object StatsDatabaseService {
         )
     }
 
-
     private suspend fun getOptOutKeys(
         playerUuid: SerializableUUID
     ): Set<Pair<SerializableKey, SerializableKey>> = suspendTransaction {
         PlayerStatOptOuts.selectAll().where { PlayerStatOptOuts.playerUuid eq playerUuid }
             .map { row -> row[PlayerStatOptOuts.categoryName] to row[PlayerStatOptOuts.statKeyName] }
-            .toList()
             .toSet()
     }
 
