@@ -40,7 +40,7 @@ object StatsOptOutView : View() {
             .layout(
                 "OOOOOOOOO",
                 "O       O",
-                "O   T   O",
+                "O   P   O",
                 "O       O",
                 "OOOOOOOOO"
             )
@@ -59,7 +59,7 @@ object StatsOptOutView : View() {
 
             playtimeEnabledState.set(isEnabled, render)
 
-            render.layoutSlot('S')
+            render.layoutSlot('P')
                 .updateOnStateChange(playtimeEnabledState)
                 .onRender { slotRender ->
                     val currentState = playtimeEnabledState.get(slotRender)
