@@ -30,9 +30,9 @@ import org.bukkit.entity.Player
 const val CATEGORY_NAME_CUSTOM = "minecraft:custom"
 const val STAT_NAME_PLAYTIME = "minecraft:play_time"
 
-val statsOptOutView = surfView("Optout") {
-    val playtimeEnabledStateHolder = mutableState(true)
-    val initialStateHolder = initialState<Boolean>("playtime-enabled")
+val statsOptOutView = surfView("optout") {
+    val playtimeOptOutStateHolder = mutableState(false)
+    val initialStateHolder = initialState<Boolean>("playtime-opt-in")
 
     settings {
         navigateBackOnOutsideClick(false)
@@ -55,19 +55,19 @@ val statsOptOutView = surfView("Optout") {
 
     onFirstRender {
         val initialState = initialStateHolder[this]
-        playtimeEnabledStateHolder[this] = initialState
+        playtimeOptOutStateHolder[this] = initialState
 
         layoutSlot('P') {
             updateOnClick()
 
             onRender {
-                it.item = playtimeToggleItem(playtimeEnabledStateHolder[it])
+                it.item = playtimeToggleItem(playtimeOptOutStateHolder[it])
             }
 
             onItemClick {
-                val currentState = playtimeEnabledStateHolder[this]
+                val currentState = playtimeOptOutStateHolder[this]
                 val newState = !currentState
-                playtimeEnabledStateHolder[this] = newState
+                playtimeOptOutStateHolder[this] = newState
 
                 player.playClickSound()
 
@@ -83,13 +83,13 @@ val statsOptOutView = surfView("Optout") {
 
     onClose {
         val initialState = initialStateHolder[this]
-        val state = playtimeEnabledStateHolder[this]
+        val state = playtimeOptOutStateHolder[this]
 
         if (initialState == state) {
             return@onClose
         }
 
-        val type = if (state) OptOutType.OFF else OptOutType.ON
+        val type = if (state) OptOutType.IN else OptOutType.OUT
         plugin.launch {
             OptOutStatisticService.toggleOptOut(
                 player.uniqueId,

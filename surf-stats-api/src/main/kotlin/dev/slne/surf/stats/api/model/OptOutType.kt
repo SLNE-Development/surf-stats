@@ -4,6 +4,6 @@ import kotlinx.serialization.Serializable
 
 @Serializable
 enum class OptOutType {
-    ON,
-    OFF
+    IN,
+    OUT
 }
