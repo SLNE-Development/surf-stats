@@ -9,7 +9,7 @@ import dev.slne.surf.stats.core.client.service.StatisticsManagerService
 import dev.slne.surf.stats.core.client.statsInstance
 import dev.slne.surf.stats.paper.commands.statsCommand
 import dev.slne.surf.stats.paper.listener.PlayerStatsListener
-import dev.slne.surf.stats.paper.menu.StatsOptOutView
+import dev.slne.surf.stats.paper.menu.statsOptOutView
 import dev.slne.surf.surfapi.bukkit.api.event.register
 import dev.slne.surf.surfapi.bukkit.api.inventory.framework.viewFrame
 import dev.slne.surf.surfapi.core.api.util.logger
@@ -33,7 +33,7 @@ class SurfStatsPlugin : SuspendingJavaPlugin() {
 
     override suspend fun onLoadAsync() {
         statsInstance.onLoad()
-        viewFrame.with(StatsOptOutView)
+        viewFrame.with(statsOptOutView)
     }
 
     override suspend fun onEnableAsync() {

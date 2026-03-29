@@ -12,7 +12,7 @@ import kotlin.io.path.Path
 
 @AutoService(Microservice::class)
 class StatsMicroservice : Microservice() {
-    private val dataPath = Path("config")
+    override val dataPath = Path("config")
 
     private val databaseApi = DatabaseApi.create(dataPath)
     private val rabbitApi = ServerRabbitMQApi.create("surf-stats", dataPath)

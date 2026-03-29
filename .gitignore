@@ -30,3 +30,6 @@ gradle-app.setting
 
 # Claude Code
 .claude/
+.kotlin
+
+settings.local.json
