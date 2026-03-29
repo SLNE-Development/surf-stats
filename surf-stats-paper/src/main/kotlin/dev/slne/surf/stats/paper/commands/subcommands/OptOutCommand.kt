@@ -15,10 +15,10 @@ fun optOutCommand() = subcommand("optout") {
 
     playerExecutorSuspend { player, _ ->
         val optOuts = OptOutStatisticService.getOptOutput(player.uniqueId)
-        val isEnabled = optOuts.none {
+        val isPlaytimeOptIn = optOuts.none {
             it.categoryName == key(CATEGORY_NAME_CUSTOM) && it.statisticName == key(STAT_NAME_PLAYTIME)
         }
 
-        statsOptOutView.open(player, mutableMapOf("playtime-enabled" to isEnabled))
+        statsOptOutView.open(player, mutableMapOf("playtime-opt-in" to isPlaytimeOptIn))
     }
 }

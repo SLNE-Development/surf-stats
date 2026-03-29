@@ -12,6 +12,7 @@ import dev.slne.surf.stats.api.model.PlayerStats
 import dev.slne.surf.stats.api.model.PlayerStatsBatch
 import dev.slne.surf.stats.microservice.db.tables.*
 import dev.slne.surf.surfapi.core.api.messages.adventure.key
+import dev.slne.surf.surfapi.core.api.serializer.adventure.key.SerializableKey
 import dev.slne.surf.surfapi.core.api.serializer.java.uuid.SerializableUUID
 import dev.slne.surf.surfapi.core.api.util.logger
 import kotlinx.coroutines.async
@@ -42,13 +43,13 @@ object StatsDatabaseService {
         val categoryNameKey = key(categoryName)
         val statisticNameKey = key(statisticName)
 
-        if (type == OptOutType.ON) {
+        if (type == OptOutType.OUT) {
             PlayerStatOptOuts.insertIgnore {
                 it[this.playerUuid] = playerUuid
                 it[this.categoryName] = categoryNameKey
                 it[this.statKeyName] = statisticNameKey
             }
-        } else {
+        } else if (type == OptOutType.IN) {
             PlayerStatOptOuts.deleteWhere {
                 (PlayerStatOptOuts.playerUuid eq playerUuid) and
                         (PlayerStatOptOuts.categoryName eq categoryNameKey) and
@@ -70,10 +71,29 @@ object StatsDatabaseService {
             playerUuid = this[PlayerStatOptOuts.playerUuid],
             categoryName = this[PlayerStatOptOuts.categoryName],
             statisticName = this[PlayerStatOptOuts.statKeyName],
-            type = OptOutType.ON
+            type = OptOutType.OUT
         )
     }
 
+
+    private suspend fun getOptOutKeys(
+        playerUuid: SerializableUUID
+    ): Set<Pair<SerializableKey, SerializableKey>> = suspendTransaction {
+        PlayerStatOptOuts.selectAll().where { PlayerStatOptOuts.playerUuid eq playerUuid }
+            .map { row -> row[PlayerStatOptOuts.categoryName] to row[PlayerStatOptOuts.statKeyName] }
+            .toList()
+            .toSet()
+    }
+
+    private fun PlayerStatsBatch.filterOptedOut(
+        optOutKeys: Set<Pair<SerializableKey, SerializableKey>>
+    ): PlayerStatsBatch {
+        if (optOutKeys.isEmpty()) return this
+        val filteredStats = stats.stats.filter { entry ->
+            (entry.category to entry.key) !in optOutKeys
+        }
+        return copy(stats = PlayerStats(stats.playerUuid, stats.serverName, filteredStats))
+    }
 
     private suspend fun ensureDimensions(
         stats: PlayerStats,
@@ -101,15 +121,20 @@ object StatsDatabaseService {
     }
 
     private suspend fun saveBatch(batch: PlayerStatsBatch) {
-        suspendTransaction {
-            ensureDimensions(batch.stats)
+        val optOutKeys = getOptOutKeys(batch.playerUuid)
+        val filtered = batch.filterOptedOut(optOutKeys)
 
-            PlayerStatsTable.batchUpsert(batch.stats) { entry ->
-                this[PlayerStatsTable.playerUuid] = batch.playerUuid
+        if (filtered.stats.isEmpty()) return
+
+        suspendTransaction {
+            ensureDimensions(filtered.stats)
+
+            PlayerStatsTable.batchUpsert(filtered.stats) { entry ->
+                this[PlayerStatsTable.playerUuid] = filtered.playerUuid
                 this[PlayerStatsTable.categoryName] = entry.category
                 this[PlayerStatsTable.statKeyName] = entry.key
                 this[PlayerStatsTable.value] = entry.value
-                this[PlayerStatsTable.serverName] = batch.serverName
+                this[PlayerStatsTable.serverName] = filtered.serverName
             }
         }
     }
@@ -122,7 +147,10 @@ object StatsDatabaseService {
     private suspend fun saveDiffBatch(
         batch: PlayerStatsBatch,
     ) {
-        val stats = batch.stats
+        val optOutKeys = getOptOutKeys(batch.playerUuid)
+        val filtered = batch.filterOptedOut(optOutKeys)
+        val stats = filtered.stats
+
         if (stats.isEmpty()) {
             return
         }
@@ -137,7 +165,7 @@ object StatsDatabaseService {
                 this[PlayerStatsHistoryTable.statKeyName] = entry.key
                 this[PlayerStatsHistoryTable.value] = entry.value
                 this[PlayerStatsHistoryTable.serverName] = stats.serverName
-                this[PlayerStatsHistoryTable.clanUuid] = batch.clanUuid
+                this[PlayerStatsHistoryTable.clanUuid] = filtered.clanUuid
             }
         }
     }
