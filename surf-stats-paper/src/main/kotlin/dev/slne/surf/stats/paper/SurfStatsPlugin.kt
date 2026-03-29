@@ -7,8 +7,11 @@ import dev.slne.surf.stats.api.SurfStatsApi
 import dev.slne.surf.stats.core.client.json.StatsFileService
 import dev.slne.surf.stats.core.client.service.StatisticsManagerService
 import dev.slne.surf.stats.core.client.statsInstance
+import dev.slne.surf.stats.paper.commands.statsCommand
 import dev.slne.surf.stats.paper.listener.PlayerStatsListener
+import dev.slne.surf.stats.paper.menu.statsOptOutView
 import dev.slne.surf.surfapi.bukkit.api.event.register
+import dev.slne.surf.surfapi.bukkit.api.inventory.framework.viewFrame
 import dev.slne.surf.surfapi.core.api.util.logger
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
@@ -30,6 +33,7 @@ class SurfStatsPlugin : SuspendingJavaPlugin() {
 
     override suspend fun onLoadAsync() {
         statsInstance.onLoad()
+        viewFrame.with(statsOptOutView)
     }
 
     override suspend fun onEnableAsync() {
@@ -38,6 +42,8 @@ class SurfStatsPlugin : SuspendingJavaPlugin() {
         initializeServices()
         registerListeners()
         startPeriodicDiffSave()
+
+        statsCommand()
     }
 
     override suspend fun onDisableAsync() {
