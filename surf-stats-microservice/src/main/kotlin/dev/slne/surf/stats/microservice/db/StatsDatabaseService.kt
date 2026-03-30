@@ -10,6 +10,7 @@ import dev.slne.surf.stats.api.model.OptOutInfo
 import dev.slne.surf.stats.api.model.OptOutType
 import dev.slne.surf.stats.api.model.PlayerStats
 import dev.slne.surf.stats.api.model.PlayerStatsBatch
+import dev.slne.surf.stats.core.common.mapping.optOutStatisticMapping
 import dev.slne.surf.stats.microservice.db.tables.*
 import dev.slne.surf.surfapi.core.api.messages.adventure.key
 import dev.slne.surf.surfapi.core.api.serializer.adventure.key.SerializableKey
@@ -41,20 +42,26 @@ object StatsDatabaseService {
         statisticName: String,
         type: OptOutType
     ) = suspendTransaction {
-        val categoryNameKey = key(categoryName)
-        val statisticNameKey = key(statisticName)
+        val mapping =
+            optOutStatisticMapping.find { it.categoryName == categoryName && it.statisticName == statisticName }
+        val items = mapping?.items ?: listOf(statisticName)
 
-        if (type == OptOutType.OUT) {
-            PlayerStatOptOuts.insertIgnore {
-                it[this.playerUuid] = playerUuid
-                it[this.categoryName] = categoryNameKey
-                it[this.statKeyName] = statisticNameKey
-            }
-        } else if (type == OptOutType.IN) {
-            PlayerStatOptOuts.deleteWhere {
-                (PlayerStatOptOuts.playerUuid eq playerUuid) and
-                        (PlayerStatOptOuts.categoryName eq categoryNameKey) and
-                        (PlayerStatOptOuts.statKeyName eq statisticNameKey)
+        val categoryNameKey = key(categoryName)
+        items.forEach { item ->
+            val statisticNameKey = key(item)
+
+            if (type == OptOutType.OUT) {
+                PlayerStatOptOuts.insertIgnore {
+                    it[this.playerUuid] = playerUuid
+                    it[this.categoryName] = categoryNameKey
+                    it[this.statKeyName] = statisticNameKey
+                }
+            } else if (type == OptOutType.IN) {
+                PlayerStatOptOuts.deleteWhere {
+                    (PlayerStatOptOuts.playerUuid eq playerUuid) and
+                            (PlayerStatOptOuts.categoryName eq categoryNameKey) and
+                            (PlayerStatOptOuts.statKeyName eq statisticNameKey)
+                }
             }
         }
     }
