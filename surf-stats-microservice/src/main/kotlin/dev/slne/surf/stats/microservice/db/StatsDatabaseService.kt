@@ -1,5 +1,9 @@
 package dev.slne.surf.stats.microservice.db
 
+import dev.slne.surf.api.core.messages.adventure.key
+import dev.slne.surf.api.core.serializer.adventure.key.SerializableKey
+import dev.slne.surf.api.core.serializer.java.uuid.SerializableUUID
+import dev.slne.surf.api.core.util.logger
 import dev.slne.surf.database.libs.org.jetbrains.exposed.v1.core.ResultRow
 import dev.slne.surf.database.libs.org.jetbrains.exposed.v1.core.and
 import dev.slne.surf.database.libs.org.jetbrains.exposed.v1.core.eq
@@ -12,10 +16,6 @@ import dev.slne.surf.stats.api.model.PlayerStats
 import dev.slne.surf.stats.api.model.PlayerStatsBatch
 import dev.slne.surf.stats.core.common.mapping.optOutStatisticMapping
 import dev.slne.surf.stats.microservice.db.tables.*
-import dev.slne.surf.surfapi.core.api.messages.adventure.key
-import dev.slne.surf.surfapi.core.api.serializer.adventure.key.SerializableKey
-import dev.slne.surf.surfapi.core.api.serializer.java.uuid.SerializableUUID
-import dev.slne.surf.surfapi.core.api.util.logger
 import kotlinx.coroutines.async
 import kotlinx.coroutines.awaitAll
 import kotlinx.coroutines.coroutineScope

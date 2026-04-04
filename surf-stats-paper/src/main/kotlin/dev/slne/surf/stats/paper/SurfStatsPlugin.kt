@@ -2,7 +2,9 @@ package dev.slne.surf.stats.paper
 
 import com.github.shynixn.mccoroutine.folia.SuspendingJavaPlugin
 import com.github.shynixn.mccoroutine.folia.launch
-import dev.slne.surf.core.api.common.surfCoreApi
+import dev.slne.surf.api.core.util.logger
+import dev.slne.surf.api.paper.event.register
+import dev.slne.surf.api.paper.inventory.framework.viewFrame
 import dev.slne.surf.stats.api.SurfStatsApi
 import dev.slne.surf.stats.core.client.json.StatsFileService
 import dev.slne.surf.stats.core.client.service.StatisticsManagerService
@@ -10,9 +12,6 @@ import dev.slne.surf.stats.core.client.statsInstance
 import dev.slne.surf.stats.paper.commands.statsCommand
 import dev.slne.surf.stats.paper.listener.PlayerStatsListener
 import dev.slne.surf.stats.paper.menu.statsOptOutView
-import dev.slne.surf.surfapi.bukkit.api.event.register
-import dev.slne.surf.surfapi.bukkit.api.inventory.framework.viewFrame
-import dev.slne.surf.surfapi.core.api.util.logger
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.isActive
@@ -70,7 +69,7 @@ class SurfStatsPlugin : SuspendingJavaPlugin() {
 
         // Debug Server Info
         log.atInfo().log(
-            "Server name: ${surfCoreApi.getCurrentServerName()}, display name: ${surfCoreApi.getCurrentServerDisplayName()}"
+            "Server name: ${SurfCoreApi.getCurrentServerName()}, display name: ${SurfCoreApi.getCurrentServerDisplayName()}"
         )
 
         // Initialize file service

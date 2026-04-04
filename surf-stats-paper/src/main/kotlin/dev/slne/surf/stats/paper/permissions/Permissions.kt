@@ -1,6 +1,6 @@
 package dev.slne.surf.stats.paper.permissions
 
-import dev.slne.surf.surfapi.bukkit.api.permission.PermissionRegistry
+import dev.slne.surf.api.paper.permission.PermissionRegistry
 
 object Permissions : PermissionRegistry() {
     const val BASE = "surf.stats"

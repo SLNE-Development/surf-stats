@@ -2,7 +2,7 @@ package dev.slne.surf.stats.core.client
 
 import com.google.auto.service.AutoService
 import dev.slne.clan.api.clan.findClanByPlayer
-import dev.slne.surf.core.api.common.surfCoreApi
+import dev.slne.surf.api.core.util.logger
 import dev.slne.surf.stats.api.SurfStatsApi
 import dev.slne.surf.stats.api.model.PlayerStats
 import dev.slne.surf.stats.api.model.PlayerStatsBatch
@@ -10,7 +10,6 @@ import dev.slne.surf.stats.core.client.repository.PlayerStatsRepository
 import dev.slne.surf.stats.core.client.service.StatisticsManagerService
 import dev.slne.surf.stats.core.common.packets.SavePlayerRequestPacket
 import dev.slne.surf.stats.core.common.packets.SaveStatsRequestPacket
-import dev.slne.surf.surfapi.core.api.util.logger
 import kotlinx.coroutines.async
 import kotlinx.coroutines.coroutineScope
 import java.util.*
@@ -95,7 +94,7 @@ class SurfStatsApiImpl : SurfStatsApi {
                     PlayerStatsBatch(
                         playerUuid = playerUuid,
                         stats = stats,
-                        serverName = surfCoreApi.getCurrentServerName(),
+                        serverName = SurfCoreApi.getCurrentServerName(),
                         clanUuid = null
                     )
                 ),
@@ -115,7 +114,7 @@ class SurfStatsApiImpl : SurfStatsApi {
                     PlayerStatsBatch(
                         playerUuid = playerUuid,
                         stats = diffs,
-                        serverName = surfCoreApi.getCurrentServerName(),
+                        serverName = SurfCoreApi.getCurrentServerName(),
                         clanUuid = clanUuid
                     )
                 ),
@@ -130,7 +129,7 @@ class SurfStatsApiImpl : SurfStatsApi {
             PlayerStatsBatch(
                 playerUuid = entry.playerUuid,
                 stats = entry,
-                serverName = surfCoreApi.getCurrentServerName(),
+                serverName = SurfCoreApi.getCurrentServerName(),
                 clanUuid = entry.playerUuid.findClanByPlayer()?.uuid
             )
         }
@@ -161,7 +160,7 @@ class SurfStatsApiImpl : SurfStatsApi {
             PlayerStatsBatch(
                 playerUuid = uuid,
                 stats = diffs,
-                serverName = surfCoreApi.getCurrentServerName(),
+                serverName = SurfCoreApi.getCurrentServerName(),
                 clanUuid = clanUuid
             )
         }

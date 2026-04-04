@@ -1,9 +1,8 @@
 package dev.slne.surf.stats.core.client
 
-import dev.slne.surf.core.api.common.surfCoreApi
+import dev.slne.surf.api.core.util.requiredService
 import dev.slne.surf.rabbitmq.api.ClientRabbitMQApi
 import dev.slne.surf.stats.core.common.packets.SaveServerRequestPacket
-import dev.slne.surf.surfapi.core.api.util.requiredService
 import java.nio.file.Path
 
 val statsInstance = requiredService<StatsInstance>()
@@ -18,8 +17,8 @@ abstract class StatsInstance {
 
         rabbitApi.sendRequest(
             SaveServerRequestPacket(
-                serverName = surfCoreApi.getCurrentServerName(),
-                serverLabel = surfCoreApi.getCurrentServerDisplayName()
+                serverName = SurfCoreApi.getCurrentServerName(),
+                serverLabel = SurfCoreApi.getCurrentServerDisplayName()
             )
         )
     }

@@ -1,7 +1,7 @@
 package dev.slne.surf.stats.core.client.json
 
+import dev.slne.surf.api.core.messages.adventure.key
 import dev.slne.surf.stats.api.model.StatEntry
-import dev.slne.surf.surfapi.core.api.messages.adventure.key
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.Transient

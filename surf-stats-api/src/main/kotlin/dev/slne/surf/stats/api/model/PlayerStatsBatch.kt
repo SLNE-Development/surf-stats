@@ -1,6 +1,6 @@
 package dev.slne.surf.stats.api.model
 
-import dev.slne.surf.surfapi.core.api.serializer.java.uuid.SerializableUUID
+import dev.slne.surf.api.core.serializer.java.uuid.SerializableUUID
 import kotlinx.serialization.Serializable
 
 /**

@@ -1,10 +1,10 @@
 package dev.slne.surf.stats.microservice.db.tables
 
+import dev.slne.surf.api.core.messages.adventure.key
 import dev.slne.surf.database.columns.charUuid
 import dev.slne.surf.database.libs.org.jetbrains.exposed.v1.core.Table
 import dev.slne.surf.database.libs.org.jetbrains.exposed.v1.javatime.CurrentTimestamp
 import dev.slne.surf.database.libs.org.jetbrains.exposed.v1.javatime.timestamp
-import dev.slne.surf.surfapi.core.api.messages.adventure.key
 
 object PlayerStatsHistoryTable : Table("player_stats_history") {
     val id = long("id").autoIncrement()
@@ -23,8 +23,22 @@ object PlayerStatsHistoryTable : Table("player_stats_history") {
     override val primaryKey = PrimaryKey(id)
 
     init {
-        uniqueIndex("uq_player_stat_snapshot", playerUuid, categoryName, statKeyName, serverName, createdAt)
-        index("idx_stats_player_category_stat", false, playerUuid, categoryName, statKeyName, createdAt)
+        uniqueIndex(
+            "uq_player_stat_snapshot",
+            playerUuid,
+            categoryName,
+            statKeyName,
+            serverName,
+            createdAt
+        )
+        index(
+            "idx_stats_player_category_stat",
+            false,
+            playerUuid,
+            categoryName,
+            statKeyName,
+            createdAt
+        )
         index("idx_stats_clan_created_at", false, clanUuid, createdAt)
         index("idx_stats_stat_key_created_at", false, statKeyName, createdAt)
     }

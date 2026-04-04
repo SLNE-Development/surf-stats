@@ -1,6 +1,6 @@
 package dev.slne.surf.stats.api.utils
 
-import dev.slne.surf.surfapi.shared.api.annotation.InternalAPIMarker
+import dev.slne.surf.api.shared.api.annotation.InternalAPIMarker
 
 @Target(
     AnnotationTarget.CLASS,

@@ -1,9 +1,8 @@
 package dev.slne.surf.stats.core.client.repository
 
-import dev.slne.surf.core.api.common.surfCoreApi
+import dev.slne.surf.api.core.util.logger
 import dev.slne.surf.stats.api.model.PlayerStats
 import dev.slne.surf.stats.core.client.json.StatsFileService
-import dev.slne.surf.surfapi.core.api.util.logger
 import java.util.*
 
 /**
@@ -17,7 +16,7 @@ object PlayerStatsRepositoryImpl : PlayerStatsRepository {
             .getOrElse {
                 PlayerStats(
                     playerUuid = uuid,
-                    serverName = surfCoreApi.getCurrentServerName()
+                    serverName = SurfCoreApi.getCurrentServerName()
                 )
             }
     }
