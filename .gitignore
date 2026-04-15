@@ -26,7 +26,7 @@ gradle-app.setting
 .classpath
 
 # IntelliJ IDEA
-.idea/
+.idea
 
 # Claude Code
 .claude/
