@@ -15,7 +15,7 @@ A Paper plugin that reads Minecraft's per-player statistics JSON files and persi
 - Paper 1.21.1+
 - Java 21+
 - MySQL or MariaDB
-- [surf-bukkit-api](https://repo.slne.dev) and [surf-core-paper](https://repo.slne.dev) plugins
+- [surf-api-paper](https://reposilite.slne.dev) and [surf-core-paper](https://reposilite.slne.dev) plugins
 
 ## Building
 

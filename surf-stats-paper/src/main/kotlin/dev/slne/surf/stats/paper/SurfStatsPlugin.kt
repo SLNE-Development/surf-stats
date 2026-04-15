@@ -5,6 +5,7 @@ import com.github.shynixn.mccoroutine.folia.launch
 import dev.slne.surf.api.core.util.logger
 import dev.slne.surf.api.paper.event.register
 import dev.slne.surf.api.paper.inventory.framework.viewFrame
+import dev.slne.surf.core.api.common.SurfCoreApi
 import dev.slne.surf.stats.api.SurfStatsApi
 import dev.slne.surf.stats.core.client.json.StatsFileService
 import dev.slne.surf.stats.core.client.service.StatisticsManagerService

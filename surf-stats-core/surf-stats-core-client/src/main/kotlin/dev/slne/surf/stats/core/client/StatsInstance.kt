@@ -1,6 +1,7 @@
 package dev.slne.surf.stats.core.client
 
 import dev.slne.surf.api.core.util.requiredService
+import dev.slne.surf.core.api.common.SurfCoreApi
 import dev.slne.surf.rabbitmq.api.ClientRabbitMQApi
 import dev.slne.surf.stats.core.common.packets.SaveServerRequestPacket
 import java.nio.file.Path

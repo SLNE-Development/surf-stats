@@ -3,6 +3,7 @@ package dev.slne.surf.stats.paper.commands.subcommands
 import dev.jorel.commandapi.kotlindsl.subcommand
 import dev.slne.surf.api.core.messages.adventure.key
 import dev.slne.surf.api.paper.command.executors.playerExecutorSuspend
+import dev.slne.surf.api.paper.inventory.framework.open
 import dev.slne.surf.stats.core.client.service.OptOutStatisticService
 import dev.slne.surf.stats.paper.menu.CATEGORY_NAME_CUSTOM
 import dev.slne.surf.stats.paper.menu.STAT_NAME_PLAYTIME

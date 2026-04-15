@@ -1,6 +1,7 @@
 package dev.slne.surf.stats.core.client.json
 
 import dev.slne.surf.api.core.util.logger
+import dev.slne.surf.core.api.common.SurfCoreApi
 import dev.slne.surf.stats.api.model.PlayerStats
 import kotlinx.coroutines.*
 import kotlinx.serialization.json.Json

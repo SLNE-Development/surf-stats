@@ -3,6 +3,7 @@ package dev.slne.surf.stats.core.client
 import com.google.auto.service.AutoService
 import dev.slne.clan.api.clan.findClanByPlayer
 import dev.slne.surf.api.core.util.logger
+import dev.slne.surf.core.api.common.SurfCoreApi
 import dev.slne.surf.stats.api.SurfStatsApi
 import dev.slne.surf.stats.api.model.PlayerStats
 import dev.slne.surf.stats.api.model.PlayerStatsBatch
