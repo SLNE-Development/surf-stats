@@ -1,121 +1,153 @@
 # Surf Stats
 
-A Paper plugin that reads Minecraft's per-player statistics JSON files and persists them to a MySQL/MariaDB database. Statistics are captured on player logout, periodic world saves, and server shutdown.
+A Paper plugin + standalone microservice that captures Minecraft per-player statistics, computes diffs against a snapshot, and persists them to a relational database. The Paper plugin reads Minecraft's native stats JSON files, the microservice owns all database access, and the two communicate over RabbitMQ.
 
 ## Modules
 
 | Module | Description |
 |---|---|
-| `surf-stats-api` | Public API interfaces and data models |
-| `surf-stats-core` | Core implementation (file parsing, database persistence) |
-| `surf-stats-paper` | Paper plugin (event listeners, lifecycle management) |
+| `surf-stats-api` | Public API interfaces and serializable data models |
+| `surf-stats-core/surf-stats-core-common` | Shared RabbitMQ packets and opt-out mappings |
+| `surf-stats-core/surf-stats-core-client` | Client-side implementation (file parsing, snapshots, packet sending) |
+| `surf-stats-paper` | Paper plugin (event listeners, periodic save, commands, opt-out menu) |
+| `surf-stats-microservice` | Standalone microservice that handles RabbitMQ packets and writes to the database |
 
 ## Requirements
 
-- Paper 1.21.1+
+### Paper plugin
+- Paper 1.21+ (Folia is supported)
 - Java 21+
-- MySQL or MariaDB
-- [surf-api-paper](https://reposilite.slne.dev) and [surf-core-paper](https://reposilite.slne.dev) plugins
+- [`surf-rabbitmq-paper`](https://reposilite.slne.dev) — required
+- [`surf-clan-paper`](https://reposilite.slne.dev) — soft dependency (used to attribute diff entries to clans)
+- `surf-api-paper` and `surf-core-paper` (transitive)
+
+### Microservice
+- Java 21+
+- A RabbitMQ broker reachable by both the plugin and the microservice
+- An R2DBC-compatible database (configured via the bundled `surf-database` integration)
 
 ## Building
 
 ```bash
-./gradlew :surf-stats-paper:build
+./gradlew build
 ```
 
-The plugin jar is produced at `surf-stats-paper/build/libs/`.
+Output artifacts:
+- Plugin jar: `surf-stats-paper/build/libs/`
+- Microservice jar: `surf-stats-microservice/build/libs/`
 
 ## Configuration
 
-### config.yml
+Surf Stats does not ship its own `config.yml` or `database.yml`. Configuration is delegated to the underlying infrastructure plugins:
 
-```yaml
-server:
-  name: "my-server"      # Unique identifier for this server (must be changed)
-  label: "My Server"     # Human-readable display name
-```
-
-The plugin will refuse to start if `server.name` is left as `my-server`.
-
-### database.yml
-
-```yaml
-logLevel: DEBUG
-credentials:
-  host: localhost
-  port: 3306
-  database: my_database
-  username: my_user
-  password: my_password
-pool:
-  sizing:
-    initialSize: 10
-    minIdle: 0
-    maxSize: 10
-  timeouts:
-    maxAcquireTimeMillis: 10000
-    maxCreateConnectionTimeMillis: 30000
-    maxValidationTimeMillis: -1
-    maxIdleTimeMillis: 60000
-    maxLifeTimeMillis: 1800000
-```
+- **Server identity** is provided by `surf-core-paper` (`SurfCoreApi.getCurrentServerName()` / `getCurrentServerDisplayName()`). The plugin will register itself in the `servers` table on startup.
+- **RabbitMQ connection** is configured by `surf-rabbitmq-paper` on the plugin side and by the bundled `ServerRabbitMQApi` on the microservice side.
+- **Database connection** is owned by the microservice via `surf-database` (R2DBC).
 
 ## How It Works
 
-The plugin reads Minecraft's native `<world>/stats/<uuid>.json` files and writes the data to a relational database, attributing each entry to the configured server name.
+```
+┌────────────────┐   stats JSON    ┌───────────────────┐    RabbitMQ     ┌──────────────────┐
+│ Minecraft      │ ──────────────► │ surf-stats-paper  │ ──────────────► │ surf-stats-      │
+│ <world>/stats/ │                 │ (diff computation)│                 │ microservice     │
+└────────────────┘                 └───────────────────┘                 │ (DB persistence) │
+                                                                         └──────────────────┘
+```
 
-Statistics are processed at three points:
+The Paper plugin reads Minecraft's native `<world>/stats/<uuid>.json` files, compares them against an in-memory snapshot to compute deltas, and ships both the current absolute values and the diffs to the microservice over RabbitMQ. The microservice writes the data to the database.
 
-1. **Player quit** — 1 second after disconnect (gives Minecraft time to flush the stats file)
-2. **World save** — 5 seconds after a world save cycle completes (debounced across overworld/nether/end)
-3. **Server shutdown** — synchronously during plugin disable, ensuring all online players' stats are saved before the database connection closes
+Statistics are processed at four points:
 
-All async processing uses a shared plugin-scoped `CoroutineScope` that is cancelled on shutdown to prevent post-disable coroutine leaks.
+1. **Player join** — registers the player in the database and loads their initial snapshot.
+2. **Player quit** — 1 second after disconnect (gives Minecraft time to flush the stats file), computes final diffs and saves.
+3. **Periodic** — every 5 minutes, all tracked players are flushed to disk and saved.
+4. **Server shutdown** — final flush + save for all tracked players before disconnect.
+
+All async work uses Folia-compatible coroutines (`mccoroutine-folia`) and a plugin-scoped `CoroutineScope` that is cancelled on shutdown.
+
+### Current vs. diff stats
+
+There are two parallel persistence paths:
+
+- **`PlayerStatsTable`** (`player_stats`) — UPSERTed on `(player_uuid, category, key, server_name)`. Always reflects the current absolute value.
+- **`PlayerStatsHistoryTable`** (`player_stats_history`) — append-only INSERTs of diffs against the previous snapshot, with `created_at` timestamp and optional `clan_uuid`. Suitable for time-series analysis.
 
 ## API Usage
 
-Other plugins can access the API through Bukkit's `ServicesManager`:
+The API is exposed as a Bukkit service. Use the helpers from `surf-api-core`:
 
 ```kotlin
-val api = server.servicesManager.getRegistration(SurfStatsApi::class.java)?.provider
-    ?: error("SurfStats not available")
+import dev.slne.surf.stats.api.SurfStatsApi
 
-// Load a player's stats
-val stats: PlayerStats? = api.getPlayerStats(playerUuid, playerName)
-
-// Access individual stat values
-val blocksMined = stats?.getStat("minecraft:mined", "minecraft:stone")
-
-// Get all categories
-val categories: Set<String> = stats?.categories() ?: emptySet()
+// Companion object delegates to the registered service
+SurfStatsApi.processPlayerStats(playerUuid)
+val stats = SurfStatsApi.getPlayerStats(playerUuid)
 ```
+
+### Interface
+
+```kotlin
+interface SurfStatsApi {
+    suspend fun processPlayerStats(playerUuid: UUID)
+    suspend fun processAllPlayerStats(uuids: Set<UUID>)
+    suspend fun getPlayerStats(playerUuid: UUID): PlayerStats
+    suspend fun saveStats(playerUuid: UUID, stats: PlayerStats)
+    suspend fun saveDiffStats(playerUuid: UUID, diffs: PlayerStats, clanUuid: UUID?)
+}
+```
+
+| Method | Purpose |
+|---|---|
+| `processPlayerStats` | Compute diffs, save current + diff for one player, advance snapshot |
+| `processAllPlayerStats` | Same as above, batched in parallel for many players |
+| `getPlayerStats` | Load the player's current absolute stats from disk |
+| `saveStats` | Send a `CURRENT`-type batch (UPSERT into `player_stats`) |
+| `saveDiffStats` | Send a `DIFFERENCE`-type batch (INSERT into `player_stats_history`) |
+
+All methods are `suspend`. Callers must run them inside a coroutine scope (e.g. `mccoroutine`'s `plugin.launch { … }`).
 
 ### Custom Stats
 
-Other plugins can save custom statistics into the `minecraft:custom` category:
+Other plugins can persist their own statistics through `saveStats` and `saveDiffStats`. The microservice does not whitelist categories or keys — unknown ones are auto-registered into `stat_categories` / `stat_keys`.
 
 ```kotlin
-val api = server.servicesManager.getRegistration(SurfStatsApi::class.java)?.provider
-    ?: error("SurfStats not available")
+import dev.slne.surf.api.core.messages.adventure.key
+import dev.slne.surf.core.api.common.SurfCoreApi
+import dev.slne.surf.stats.api.SurfStatsApi
+import dev.slne.surf.stats.api.model.PlayerStats
+import dev.slne.surf.stats.api.model.StatEntry
 
-// Save a single custom stat
-api.saveCustomStat(playerUuid, playerName, "my_plugin:kills", 42L)
+val customStats = PlayerStats(
+    playerUuid = playerUuid,
+    serverName = SurfCoreApi.getCurrentServerName(),
+    stats = listOf(
+        StatEntry(key("myplugin:economy"), key("coins_earned"), 150L),
+        StatEntry(key("myplugin:economy"), key("coins_spent"), 80L),
+    )
+)
 
-// Save multiple custom stats at once (single transaction)
-api.saveCustomStats(playerUuid, playerName, mapOf(
-    "my_plugin:kills" to 42L,
-    "my_plugin:deaths" to 7L
-))
+// "Current value" semantics — overwrites previous row for the same (player, category, key, server)
+SurfStatsApi.saveStats(playerUuid, customStats)
+
+// "Event" semantics — append a row with timestamp and optional clan attribution
+SurfStatsApi.saveDiffStats(playerUuid, customStats, clanUuid = null)
 ```
 
-Both methods are `suspend` functions and must be called from a coroutine context. The database service must be available or an `IllegalStateException` is thrown.
+**Things to know:**
+
+- Categories and keys are `net.kyori.adventure.key.Key` (namespaced). Use any namespace you own (e.g. `myplugin:`).
+- Values are `Long` only.
+- Player opt-outs (`player_stat_optouts`) apply to custom stats too — opted-out `(category, key)` pairs are filtered out silently before insertion.
+- The plugin's diff-computation pipeline only knows about Minecraft's vanilla stats. For custom stats, you compute the value yourself and decide whether to call `saveStats` (current state) or `saveDiffStats` (event log).
+- The `serverName` you pass must reference a registered server in the `servers` table. Use `SurfCoreApi.getCurrentServerName()` to stay consistent.
 
 ### Key API Types
 
-- **`SurfStatsApi`** — main entry point for reading and processing stats
-- **`PlayerStats`** — a player's full statistics (uuid, name, dataVersion, stat entries)
-- **`StatEntry`** — a single statistic: category (e.g. `minecraft:mined`), key (e.g. `minecraft:stone`), value
-- **`PlayerStatsBatch`** — a `PlayerStats` paired with a server name, ready for database insertion
+- **`SurfStatsApi`** — service interface; access via the companion object or `requiredService<SurfStatsApi>()`.
+- **`PlayerStats`** — a player's stats for one server: `playerUuid`, `serverName`, `List<StatEntry>`. Implements `Collection<StatEntry>`.
+- **`StatEntry`** — `category: SerializableKey`, `key: SerializableKey`, `value: Long`.
+- **`PlayerStatsBatch`** — internal RabbitMQ payload (player + stats + server + optional clan).
+- **`OptOutInfo` / `OptOutType`** — opt-out records and IN/OUT toggles.
 
 ### Dependency (Gradle)
 
@@ -125,17 +157,26 @@ dependencies {
 }
 ```
 
+## Commands & Permissions
+
+| Command | Permission | Description |
+|---|---|---|
+| `/stats` | `surf.stats.command.generic` | Root command |
+| `/stats optout` | `surf.stats.command.opt-out` | Opens the opt-out menu where players can disable specific statistics |
+
 ## Database Schema
 
-The plugin creates and manages these tables:
+The microservice creates and manages these tables:
 
 | Table | Purpose |
 |---|---|
-| `servers` | Registered server names and labels |
+| `servers` | Registered server names, labels, active flag |
 | `players` | Player UUIDs, names, data versions, timestamps |
-| `stat_categories` | Unique stat category names (e.g. `minecraft:mined`) |
-| `stat_keys` | Unique stat key names (e.g. `minecraft:stone`) |
-| `player_stats` | Stat values per player, per key, per server |
+| `stat_categories` | Distinct stat category keys (e.g. `minecraft:mined`, `myplugin:economy`) |
+| `stat_keys` | Distinct stat keys (e.g. `minecraft:stone`, `coins_earned`) |
+| `player_stats` | Current absolute value per `(player, category, key, server)` — UPSERT |
+| `player_stats_history` | Append-only diff entries with `created_at` + optional `clan_uuid` |
+| `player_stat_optouts` | Per-player opt-out list of `(category, key)` pairs to exclude from persistence |
 
 ## License
 
