@@ -104,7 +104,7 @@ class SurfStatsApiImpl : SurfStatsApi {
         )
     }
 
-    private suspend fun saveDiffStats(
+    override suspend fun saveDiffStats(
         playerUuid: UUID,
         diffs: PlayerStats,
         clanUuid: UUID?
