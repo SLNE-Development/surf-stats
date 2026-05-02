@@ -1,9 +1,11 @@
 import dev.slne.surf.surfapi.gradle.util.registerRequired
 import dev.slne.surf.surfapi.gradle.util.registerSoft
 import net.minecrell.pluginyml.paper.PaperPluginDescription
+import org.gradle.api.publish.maven.MavenPublication
 
 plugins {
     id("dev.slne.surf.surfapi.gradle.paper-plugin")
+    `maven-publish`
 }
 
 group = "dev.slne.surf"
@@ -36,8 +38,8 @@ publishing {
         maven("https://reposilite.slne.dev/releases/") {
             name = "slne-repository-releases"
             credentials {
-                username = System.getenv("SLNE_RELEASES_REPO_USERNAME")
-                password = System.getenv("SLNE_RELEASES_REPO_PASSWORD")
+                username = providers.environmentVariable("SLNE_RELEASES_REPO_USERNAME").orNull
+                password = providers.environmentVariable("SLNE_RELEASES_REPO_PASSWORD").orNull
             }
         }
     }
