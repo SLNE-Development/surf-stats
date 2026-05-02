@@ -136,12 +136,16 @@ object StatsDatabaseService {
         suspendTransaction {
             ensureDimensions(filtered.stats)
 
-            PlayerStatsTable.batchUpsert(filtered.stats) { entry ->
+            PlayerStatsTable.batchUpsert(
+                data = filtered.stats,
+                onUpdateExclude = listOf(PlayerStatsTable.lastDiffValue)
+            ) { entry ->
                 this[PlayerStatsTable.playerUuid] = filtered.playerUuid
                 this[PlayerStatsTable.categoryName] = entry.category
                 this[PlayerStatsTable.statKeyName] = entry.key
                 this[PlayerStatsTable.value] = entry.value
                 this[PlayerStatsTable.serverName] = filtered.serverName
+                this[PlayerStatsTable.lastDiffValue] = entry.value
             }
         }
     }
