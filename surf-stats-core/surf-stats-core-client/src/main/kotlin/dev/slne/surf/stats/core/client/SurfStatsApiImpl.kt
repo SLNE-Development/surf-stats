@@ -56,8 +56,7 @@ class SurfStatsApiImpl : SurfStatsApi {
             if (diffs.isNotEmpty()) {
                 saveDiffStats(
                     playerUuid = playerUuid,
-                    diffs = diffs,
-                    clanUuid = playerUuid.findClanByPlayer()?.uuid
+                    diffs = diffs
                 )
             }
 
@@ -107,7 +106,6 @@ class SurfStatsApiImpl : SurfStatsApi {
     override suspend fun saveDiffStats(
         playerUuid: UUID,
         diffs: PlayerStats,
-        clanUuid: UUID?
     ) {
         statsInstance.rabbitApi.sendRequest(
             SaveStatsRequestPacket(
@@ -116,7 +114,7 @@ class SurfStatsApiImpl : SurfStatsApi {
                         playerUuid = playerUuid,
                         stats = diffs,
                         serverName = SurfCoreApi.getCurrentServerName(),
-                        clanUuid = clanUuid
+                        clanUuid = playerUuid.findClanByPlayer()?.uuid
                     )
                 ),
                 type = SaveStatsRequestPacket.Type.DIFFERENCE

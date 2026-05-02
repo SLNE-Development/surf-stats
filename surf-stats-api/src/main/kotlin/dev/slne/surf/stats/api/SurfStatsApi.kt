@@ -16,7 +16,7 @@ interface SurfStatsApi {
 
     suspend fun saveStats(playerUuid: UUID, stats: PlayerStats)
 
-    suspend fun saveDiffStats(playerUuid: UUID, diffs: PlayerStats, clanUuid: UUID?)
+    suspend fun saveDiffStats(playerUuid: UUID, diffs: PlayerStats)
 
     companion object : SurfStatsApi by api {
         val INSTANCE get() = api
