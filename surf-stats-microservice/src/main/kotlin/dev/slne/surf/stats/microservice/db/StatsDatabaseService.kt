@@ -8,7 +8,6 @@ import dev.slne.surf.database.libs.org.jetbrains.exposed.v1.core.ResultRow
 import dev.slne.surf.database.libs.org.jetbrains.exposed.v1.core.and
 import dev.slne.surf.database.libs.org.jetbrains.exposed.v1.core.eq
 import dev.slne.surf.database.libs.org.jetbrains.exposed.v1.core.inList
-import dev.slne.surf.database.libs.org.jetbrains.exposed.v1.core.statements.insertValue
 import dev.slne.surf.database.libs.org.jetbrains.exposed.v1.javatime.CurrentTimestamp
 import dev.slne.surf.database.libs.org.jetbrains.exposed.v1.r2dbc.*
 import dev.slne.surf.database.libs.org.jetbrains.exposed.v1.r2dbc.transactions.suspendTransaction
@@ -235,9 +234,7 @@ object StatsDatabaseService {
 
             PlayerStatsTable.batchUpsert(
                 data = deltas,
-                onUpdate = {
-                    it[PlayerStatsTable.lastDiffValue] = insertValue(PlayerStatsTable.lastDiffValue)
-                }
+                onUpdateExclude = listOf(PlayerStatsTable.value)
             ) { row ->
                 this[PlayerStatsTable.playerUuid] = filtered.playerUuid
                 this[PlayerStatsTable.categoryName] = row.category
