@@ -49,8 +49,7 @@ class SurfStatsPlugin : SuspendingJavaPlugin() {
     override suspend fun onDisableAsync() {
         diffSaveJob?.cancel()
 
-        val trackedPlayers = StatisticsManagerService.snapshotMap
-            .map { entry -> entry.playerUuid }.toSet()
+        val trackedPlayers = StatisticsManagerService.trackedPlayers
 
         log.atWarning()
             .log("Processing final stats for ${trackedPlayers.size} players on server shutdown")
@@ -103,8 +102,7 @@ class SurfStatsPlugin : SuspendingJavaPlugin() {
     }
 
     private suspend fun saveTrackedPlayerStats() {
-        val trackedPlayers = StatisticsManagerService.snapshotMap
-            .map { entry -> entry.playerUuid }.toSet()
+        val trackedPlayers = StatisticsManagerService.trackedPlayers
 
         if (trackedPlayers.isNotEmpty()) {
             log.atInfo().log("Saving diffs for ${trackedPlayers.size} players")
