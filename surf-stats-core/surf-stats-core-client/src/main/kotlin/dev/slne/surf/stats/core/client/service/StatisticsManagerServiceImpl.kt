@@ -4,8 +4,7 @@ import java.util.*
 import java.util.concurrent.ConcurrentHashMap
 
 object StatisticsManagerServiceImpl : StatisticsManagerService {
-    private val _trackedPlayers: MutableSet<UUID> =
-        Collections.newSetFromMap(ConcurrentHashMap())
+    private val _trackedPlayers: MutableSet<UUID> = ConcurrentHashMap.newKeySet()
 
     override val trackedPlayers: Set<UUID>
         get() = Collections.unmodifiableSet(_trackedPlayers)
