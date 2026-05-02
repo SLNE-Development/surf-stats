@@ -1,15 +1,18 @@
 package dev.slne.surf.stats.core.client.service
 
-import dev.slne.surf.stats.api.model.PlayerStats
 import org.jetbrains.annotations.UnmodifiableView
 import java.util.*
 
+/**
+ * Tracks which players are currently being followed for periodic stat saves.
+ *
+ * Diff computation lives on the microservice — clients no longer maintain
+ * per-player snapshots. This service only records the set of players whose
+ * stats should be flushed and shipped (as absolute values) on the periodic
+ * save cycle, on quit, and on shutdown.
+ */
 interface StatisticsManagerService {
-    val snapshotMap: @UnmodifiableView List<PlayerStats>
-
-    suspend fun computeDiffs(uuid: UUID): PlayerStats
-
-    suspend fun updateSnapshot(uuid: UUID)
+    val trackedPlayers: @UnmodifiableView Set<UUID>
 
     suspend fun trackPlayer(uuid: UUID)
     fun untrackPlayer(uuid: UUID)

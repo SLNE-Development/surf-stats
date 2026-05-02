@@ -13,6 +13,7 @@ object PlayerStatsTable : Table("player_stats") {
         .transform({ key(it) }, { it.asString() })
         .references(StatKeysTable.name)
     val value = long("value")
+    val lastDiffValue = long("last_diff_value").nullable()
     val serverName = varchar("server_name", 128).references(ServersTable.name)
 
     override val primaryKey = PrimaryKey(playerUuid, categoryName, statKeyName, serverName)

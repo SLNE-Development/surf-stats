@@ -1,6 +1,6 @@
 # Surf Stats
 
-A Paper plugin + standalone microservice that captures Minecraft per-player statistics, computes diffs against a snapshot, and persists them to a relational database. The Paper plugin reads Minecraft's native stats JSON files, the microservice owns all database access, and the two communicate over RabbitMQ.
+A Paper plugin + standalone microservice that captures Minecraft per-player statistics and persists them to a relational database. The Paper plugin reads Minecraft's native stats JSON files and ships absolute current values; the microservice owns all database access (including server-side delta computation) and the two communicate over RabbitMQ.
 
 ## Modules
 
@@ -8,7 +8,7 @@ A Paper plugin + standalone microservice that captures Minecraft per-player stat
 |---|---|
 | `surf-stats-api` | Public API interfaces and serializable data models |
 | `surf-stats-core/surf-stats-core-common` | Shared RabbitMQ packets and opt-out mappings |
-| `surf-stats-core/surf-stats-core-client` | Client-side implementation (file parsing, snapshots, packet sending) |
+| `surf-stats-core/surf-stats-core-client` | Client-side implementation (file parsing, packet sending) |
 | `surf-stats-paper` | Paper plugin (event listeners, periodic save, commands, opt-out menu) |
 | `surf-stats-microservice` | Standalone microservice that handles RabbitMQ packets and writes to the database |
 
@@ -49,12 +49,12 @@ Surf Stats does not ship its own `config.yml` or `database.yml`. Configuration i
 ```
 ┌────────────────┐   stats JSON    ┌───────────────────┐    RabbitMQ     ┌──────────────────┐
 │ Minecraft      │ ──────────────► │ surf-stats-paper  │ ──────────────► │ surf-stats-      │
-│ <world>/stats/ │                 │ (diff computation)│                 │ microservice     │
-└────────────────┘                 └───────────────────┘                 │ (DB persistence) │
+│ <world>/stats/ │                 │  (read & ship)    │                 │ microservice     │
+└────────────────┘                 └───────────────────┘                 │ (delta + persist)│
                                                                          └──────────────────┘
 ```
 
-The Paper plugin reads Minecraft's native `<world>/stats/<uuid>.json` files, compares them against an in-memory snapshot to compute deltas, and ships both the current absolute values and the diffs to the microservice over RabbitMQ. The microservice writes the data to the database.
+The Paper plugin reads Minecraft's native `<world>/stats/<uuid>.json` files and ships absolute current values to the microservice over RabbitMQ. The microservice owns the database, computes per-tuple deltas against the `player_stats.last_diff_value` baseline, and writes both the current row and the history row in a single transaction.
 
 Statistics are processed at four points:
 
@@ -69,8 +69,8 @@ All async work uses Folia-compatible coroutines (`mccoroutine-folia`) and a plug
 
 There are two parallel persistence paths:
 
-- **`PlayerStatsTable`** (`player_stats`) — UPSERTed on `(player_uuid, category, key, server_name)`. Always reflects the current absolute value.
-- **`PlayerStatsHistoryTable`** (`player_stats_history`) — append-only INSERTs of diffs against the previous snapshot, with `created_at` timestamp and optional `clan_uuid`. Suitable for time-series analysis.
+- **`PlayerStatsTable`** (`player_stats`) — UPSERTed on `(player_uuid, category, key, server_name)`. The `value` column always reflects the current absolute value (written by `saveStats`); the `last_diff_value` column tracks the per-tuple baseline used for diff computation (written by `saveDiffStats`).
+- **`PlayerStatsHistoryTable`** (`player_stats_history`) — append-only INSERTs of deltas with `created_at` timestamp and optional `clan_uuid`. Suitable for time-series analysis. Deltas are computed server-side: `delta = entry.value - last_diff_value`. Only rows with `delta > 0` are inserted; the baseline is always advanced to the new value.
 
 ## API Usage
 
@@ -92,17 +92,19 @@ interface SurfStatsApi {
     suspend fun processAllPlayerStats(uuids: Set<UUID>)
     suspend fun getPlayerStats(playerUuid: UUID): PlayerStats
     suspend fun saveStats(playerUuid: UUID, stats: PlayerStats)
-    suspend fun saveDiffStats(playerUuid: UUID, diffs: PlayerStats, clanUuid: UUID?)
+    suspend fun saveDiffStats(playerUuid: UUID, stats: PlayerStats)
 }
 ```
 
 | Method | Purpose |
 |---|---|
-| `processPlayerStats` | Compute diffs, save current + diff for one player, advance snapshot |
+| `processPlayerStats` | Load current stats for one player and ship them on both the current and diff paths |
 | `processAllPlayerStats` | Same as above, batched in parallel for many players |
 | `getPlayerStats` | Load the player's current absolute stats from disk |
-| `saveStats` | Send a `CURRENT`-type batch (UPSERT into `player_stats`) |
-| `saveDiffStats` | Send a `DIFFERENCE`-type batch (INSERT into `player_stats_history`) |
+| `saveStats` | Send a `CURRENT`-type batch (UPSERT `player_stats.value`) |
+| `saveDiffStats` | Send a `DIFFERENCE`-type batch — pass **absolute current values**; the microservice computes the delta against `last_diff_value` and appends to `player_stats_history` |
+
+> **Breaking change:** `saveDiffStats` now expects absolute current values, not pre-computed deltas. Sending deltas under the new contract will make the per-tuple baseline drift and corrupt history. The first call per `(player, category, key, server)` writes `entry.value` as the first delta (baseline starts at 0).
 
 All methods are `suspend`. Callers must run them inside a coroutine scope (e.g. `mccoroutine`'s `plugin.launch { … }`).
 
@@ -129,8 +131,9 @@ val customStats = PlayerStats(
 // "Current value" semantics — overwrites previous row for the same (player, category, key, server)
 SurfStatsApi.saveStats(playerUuid, customStats)
 
-// "Event" semantics — append a row with timestamp and optional clan attribution
-SurfStatsApi.saveDiffStats(playerUuid, customStats, clanUuid = null)
+// "Event" semantics — pass absolute values; the microservice computes the delta
+// against last_diff_value and appends a history row when delta > 0.
+SurfStatsApi.saveDiffStats(playerUuid, customStats)
 ```
 
 **Things to know:**
@@ -138,7 +141,7 @@ SurfStatsApi.saveDiffStats(playerUuid, customStats, clanUuid = null)
 - Categories and keys are `net.kyori.adventure.key.Key` (namespaced). Use any namespace you own (e.g. `myplugin:`).
 - Values are `Long` only.
 - Player opt-outs (`player_stat_optouts`) apply to custom stats too — opted-out `(category, key)` pairs are filtered out silently before insertion.
-- The plugin's diff-computation pipeline only knows about Minecraft's vanilla stats. For custom stats, you compute the value yourself and decide whether to call `saveStats` (current state) or `saveDiffStats` (event log).
+- For custom stats, pass the absolute current value to either method. Pre-computing deltas client-side and shipping them via `saveDiffStats` is no longer supported and will corrupt the per-tuple baseline.
 - The `serverName` you pass must reference a registered server in the `servers` table. Use `SurfCoreApi.getCurrentServerName()` to stay consistent.
 
 ### Key API Types
@@ -174,8 +177,8 @@ The microservice creates and manages these tables:
 | `players` | Player UUIDs, names, data versions, timestamps |
 | `stat_categories` | Distinct stat category keys (e.g. `minecraft:mined`, `myplugin:economy`) |
 | `stat_keys` | Distinct stat keys (e.g. `minecraft:stone`, `coins_earned`) |
-| `player_stats` | Current absolute value per `(player, category, key, server)` — UPSERT |
-| `player_stats_history` | Append-only diff entries with `created_at` + optional `clan_uuid` |
+| `player_stats` | Current absolute `value` per `(player, category, key, server)` plus `last_diff_value` baseline used for server-side delta computation — UPSERT |
+| `player_stats_history` | Append-only delta entries with `created_at` + optional `clan_uuid` |
 | `player_stat_optouts` | Per-player opt-out list of `(category, key)` pairs to exclude from persistence |
 
 ## License

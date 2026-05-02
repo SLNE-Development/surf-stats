@@ -7,6 +7,8 @@ import dev.slne.surf.api.core.util.logger
 import dev.slne.surf.database.libs.org.jetbrains.exposed.v1.core.ResultRow
 import dev.slne.surf.database.libs.org.jetbrains.exposed.v1.core.and
 import dev.slne.surf.database.libs.org.jetbrains.exposed.v1.core.eq
+import dev.slne.surf.database.libs.org.jetbrains.exposed.v1.core.inList
+import dev.slne.surf.database.libs.org.jetbrains.exposed.v1.core.statements.insertValue
 import dev.slne.surf.database.libs.org.jetbrains.exposed.v1.javatime.CurrentTimestamp
 import dev.slne.surf.database.libs.org.jetbrains.exposed.v1.r2dbc.*
 import dev.slne.surf.database.libs.org.jetbrains.exposed.v1.r2dbc.transactions.suspendTransaction
@@ -146,9 +148,23 @@ object StatsDatabaseService {
     }
 
     /**
-     * Saves diff entries for a single player to the database.
-     * Each entry is INSERTed as a new row (not upserted), since diff entries
-     * are append-only with a timestamp.
+     * Saves diff entries for a single player.
+     *
+     * Callers send absolute current values; the microservice computes the
+     * delta against the per-tuple `last_diff_value` baseline stored in
+     * [PlayerStatsTable]. For each entry:
+     *
+     * - `delta = entry.value - baseline` (baseline defaults to 0 for first-time tuples).
+     * - `delta > 0`: append a row to [PlayerStatsHistoryTable] with `value = delta`.
+     * - `delta == 0`: no history row; baseline still upserted (no-op).
+     * - `delta < 0`: log a warning, no history row, baseline still upserted so future
+     *   calls work against the new lower baseline.
+     *
+     * The baseline upsert sets `last_diff_value = entry.value`. On a row that
+     * already exists, only `last_diff_value` is updated — `value` is never touched
+     * here (that path is owned by [saveBatch]). On insert, `value = entry.value`
+     * is used as a placeholder so the row is valid; [saveBatch] will overwrite
+     * it on the next current-stats save if it runs.
      */
     private suspend fun saveDiffBatch(
         batch: PlayerStatsBatch,
@@ -164,17 +180,81 @@ object StatsDatabaseService {
         suspendTransaction {
             ensureDimensions(stats)
 
-            // INSERT (not upsert) - each diff is a new row with its own timestamp
-            PlayerStatsHistoryTable.batchInsert(stats) { entry ->
-                this[PlayerStatsHistoryTable.playerUuid] = stats.playerUuid
-                this[PlayerStatsHistoryTable.categoryName] = entry.category
-                this[PlayerStatsHistoryTable.statKeyName] = entry.key
-                this[PlayerStatsHistoryTable.value] = entry.value
-                this[PlayerStatsHistoryTable.serverName] = stats.serverName
-                this[PlayerStatsHistoryTable.clanUuid] = filtered.clanUuid
+            val categories = stats.map { it.category }.toSet().toList()
+            val keys = stats.map { it.key }.toSet().toList()
+
+            val baselines: Map<Pair<SerializableKey, SerializableKey>, Long> = PlayerStatsTable
+                .selectAll()
+                .where {
+                    (PlayerStatsTable.playerUuid eq filtered.playerUuid) and
+                            (PlayerStatsTable.serverName eq filtered.serverName) and
+                            (PlayerStatsTable.categoryName inList categories) and
+                            (PlayerStatsTable.statKeyName inList keys)
+                }
+                .toList()
+                .associate { row ->
+                    val cat = row[PlayerStatsTable.categoryName]
+                    val statKey = row[PlayerStatsTable.statKeyName]
+                    (cat to statKey) to (row[PlayerStatsTable.lastDiffValue] ?: 0L)
+                }
+
+            val deltas = stats.map { entry ->
+                val baseline = baselines[entry.category to entry.key] ?: 0L
+                val delta = entry.value - baseline
+                if (delta < 0) {
+                    log.atInfo().log(
+                        "Negative delta for player %s on %s for %s/%s: baseline=%d, current=%d, delta=%d",
+                        filtered.playerUuid,
+                        filtered.serverName,
+                        entry.category.asString(),
+                        entry.key.asString(),
+                        baseline,
+                        entry.value,
+                        delta
+                    )
+                }
+                DeltaRow(
+                    category = entry.category,
+                    statKey = entry.key,
+                    absoluteValue = entry.value,
+                    delta = delta
+                )
+            }
+
+            val historyRows = deltas.filter { it.delta > 0 }
+            if (historyRows.isNotEmpty()) {
+                PlayerStatsHistoryTable.batchInsert(historyRows) { row ->
+                    this[PlayerStatsHistoryTable.playerUuid] = filtered.playerUuid
+                    this[PlayerStatsHistoryTable.categoryName] = row.category
+                    this[PlayerStatsHistoryTable.statKeyName] = row.statKey
+                    this[PlayerStatsHistoryTable.value] = row.delta
+                    this[PlayerStatsHistoryTable.serverName] = filtered.serverName
+                    this[PlayerStatsHistoryTable.clanUuid] = filtered.clanUuid
+                }
+            }
+
+            PlayerStatsTable.batchUpsert(
+                data = deltas,
+                onUpdate = {
+                    it[PlayerStatsTable.lastDiffValue] = insertValue(PlayerStatsTable.lastDiffValue)
+                }
+            ) { row ->
+                this[PlayerStatsTable.playerUuid] = filtered.playerUuid
+                this[PlayerStatsTable.categoryName] = row.category
+                this[PlayerStatsTable.statKeyName] = row.statKey
+                this[PlayerStatsTable.value] = row.absoluteValue
+                this[PlayerStatsTable.serverName] = filtered.serverName
+                this[PlayerStatsTable.lastDiffValue] = row.absoluteValue
             }
         }
     }
+
+    private data class DeltaRow(
+        val category: SerializableKey,
+        val statKey: SerializableKey,
+        val absoluteValue: Long,
+        val delta: Long
+    )
 
     /**
      * Saves multiple actual stat batches in parallel.
