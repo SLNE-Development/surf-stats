@@ -64,7 +64,7 @@ class SurfStatsPlugin : SuspendingJavaPlugin() {
         val mainWorld = server.worlds.firstOrNull()
             ?: throw IllegalStateException("No worlds loaded - cannot initialize stats service")
 
-        val statsDirectory = mainWorld.worldFolder.toPath().resolve("stats")
+        val statsDirectory = mainWorld.worldFolder.toPath().parent.parent.parent.resolve("players").resolve("stats")
         log.atInfo().log("Stats directory: $statsDirectory")
 
         // Debug Server Info
