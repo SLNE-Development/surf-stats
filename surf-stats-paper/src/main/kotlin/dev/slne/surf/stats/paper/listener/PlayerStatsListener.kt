@@ -9,6 +9,7 @@ import org.bukkit.event.EventPriority
 import org.bukkit.event.Listener
 import org.bukkit.event.player.PlayerJoinEvent
 import org.bukkit.event.player.PlayerQuitEvent
+import kotlin.time.Duration.Companion.milliseconds
 
 /**
  * Listener for player join/quit events.
@@ -40,7 +41,7 @@ object PlayerStatsListener : Listener {
 
         plugin.launch {
             // Wait for Minecraft to flush the stats JSON file to disk before reading it
-            delay(1000)
+            delay(1000.milliseconds)
             surfStatsApiImpl.onPlayerQuit(uuid)
         }
     }
