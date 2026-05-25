@@ -5,8 +5,6 @@ import com.github.shynixn.mccoroutine.folia.launch
 import dev.slne.surf.api.core.util.logger
 import dev.slne.surf.api.paper.event.register
 import dev.slne.surf.api.paper.inventory.framework.viewFrame
-import dev.slne.surf.api.paper.nms.NmsUseWithCaution
-import dev.slne.surf.api.paper.nms.bridges.SurfPaperNmsPlayerBridge
 import dev.slne.surf.core.api.common.SurfCoreApi
 import dev.slne.surf.stats.api.SurfStatsApi
 import dev.slne.surf.stats.core.client.json.StatsFileService
@@ -61,9 +59,12 @@ class SurfStatsPlugin : SuspendingJavaPlugin() {
         statsInstance.onDisable()
     }
 
-    @NmsUseWithCaution
     private suspend fun initializeServices() {
-        val statsDirectory = SurfPaperNmsPlayerBridge.getPlayerDataDir().resolve("stats")
+        // Get the main world's stats directory (world/stats/)
+        val mainWorld = server.worlds.firstOrNull()
+            ?: throw IllegalStateException("No worlds loaded - cannot initialize stats service")
+
+        val statsDirectory = mainWorld.worldFolder.toPath().parent.parent.parent.resolve("players").resolve("stats")
         log.atInfo().log("Stats directory: $statsDirectory")
 
         // Debug Server Info
@@ -72,7 +73,7 @@ class SurfStatsPlugin : SuspendingJavaPlugin() {
         )
 
         // Initialize file service
-        StatsFileService.initialize(statsDirectory.toPath())
+        StatsFileService.initialize(statsDirectory)
 
         log.atInfo().log("Services initialized and registered")
     }
