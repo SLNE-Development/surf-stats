@@ -145,4 +145,4 @@ private fun Player.playClickSound() {
 }
 
 private fun SurfComponentBuilder.localColored(text: String, vararg decoration: TextDecoration) =
-    text(text, TextColor.fromHexString("#00d492"), *decoration)
+    text(text, TextColor.color(0x00d492), *decoration)
