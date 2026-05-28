@@ -63,7 +63,7 @@ class SurfStatsPlugin : SuspendingJavaPlugin() {
 
     @NmsUseWithCaution
     private suspend fun initializeServices() {
-        val statsDirectory = SurfPaperNmsPlayerBridge.getPlayerDataDir().resolve("stats")
+        val statsDirectory = SurfPaperNmsPlayerBridge.getStatsDataPath()
         log.atInfo().log("Stats directory: $statsDirectory")
 
         // Debug Server Info
@@ -72,7 +72,7 @@ class SurfStatsPlugin : SuspendingJavaPlugin() {
         )
 
         // Initialize file service
-        StatsFileService.initialize(statsDirectory.toPath())
+        StatsFileService.initialize(statsDirectory)
 
         log.atInfo().log("Services initialized and registered")
     }
