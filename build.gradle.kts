@@ -1,6 +1,3 @@
-import dev.slne.surf.api.gradle.util.slneReleases
-import org.jetbrains.kotlin.gradle.dsl.KotlinJvmExtension
-
 buildscript {
     repositories {
         gradlePluginPortal()
@@ -15,22 +12,4 @@ buildscript {
 allprojects {
     group = "dev.slne.surf.stats"
     version = findProperty("version") as String
-}
-
-subprojects {
-    afterEvaluate {
-        extensions.findByType<KotlinJvmExtension>()?.apply {
-            compilerOptions {
-                optIn.add("dev.slne.surf.stats.api.utils.InternalStatsApi")
-            }
-        }
-
-        plugins.withType<PublishingPlugin> {
-            configure<PublishingExtension> {
-                repositories {
-                    slneReleases()
-                }
-            }
-        }
-    }
 }
