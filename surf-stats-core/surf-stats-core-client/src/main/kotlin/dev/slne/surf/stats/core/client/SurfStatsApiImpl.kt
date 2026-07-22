@@ -9,7 +9,6 @@ import dev.slne.surf.stats.api.model.PlayerStats
 import dev.slne.surf.stats.api.model.PlayerStatsBatch
 import dev.slne.surf.stats.core.client.repository.PlayerStatsRepository
 import dev.slne.surf.stats.core.client.service.StatisticsManagerService
-import dev.slne.surf.stats.core.common.packets.SavePlayerRequestPacket
 import dev.slne.surf.stats.core.common.packets.SaveStatsRequestPacket
 import java.util.*
 
@@ -25,14 +24,7 @@ import java.util.*
 class SurfStatsApiImpl : SurfStatsApi {
     private val log = logger()
 
-    suspend fun onPlayerJoin(playerUuid: UUID, playerName: String) {
-        statsInstance.rabbitApi.sendRequest(
-            SavePlayerRequestPacket(
-                playerUuid = playerUuid,
-                playerName = playerName
-            )
-        )
-
+    suspend fun onPlayerJoin(playerUuid: UUID) {
         StatisticsManagerService.trackPlayer(playerUuid)
     }
 

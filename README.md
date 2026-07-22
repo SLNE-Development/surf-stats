@@ -58,7 +58,7 @@ The Paper plugin reads Minecraft's native `<world>/stats/<uuid>.json` files and 
 
 Statistics are processed at four points:
 
-1. **Player join** — registers the player in the database and loads their initial snapshot.
+1. **Player join** — loads the player's initial snapshot into memory.
 2. **Player quit** — 1 second after disconnect (gives Minecraft time to flush the stats file), computes final diffs and saves.
 3. **Periodic** — every 5 minutes, all tracked players are flushed to disk and saved.
 4. **Server shutdown** — final flush + save for all tracked players before disconnect.
@@ -174,7 +174,6 @@ The microservice creates and manages these tables:
 | Table | Purpose |
 |---|---|
 | `servers` | Registered server names, labels, active flag |
-| `players` | Player UUIDs, names, data versions, timestamps |
 | `stat_categories` | Distinct stat category keys (e.g. `minecraft:mined`, `myplugin:economy`) |
 | `stat_keys` | Distinct stat keys (e.g. `minecraft:stone`, `coins_earned`) |
 | `player_stats` | Current absolute `value` per `(player, category, key, server)` plus `last_diff_value` baseline used for server-side delta computation — UPSERT |

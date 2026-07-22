@@ -5,7 +5,7 @@ import dev.slne.surf.database.columns.charUuid
 import dev.slne.surf.database.libs.org.jetbrains.exposed.v1.core.Table
 
 object PlayerStatOptOuts : Table("player_stat_optouts") {
-    val playerUuid = charUuid("player_uuid").references(PlayersTable.uuid)
+    val playerUuid = charUuid("player_uuid")
     val categoryName = varchar("category_name", 128)
         .transform({ key(it) }, { it.asString() })
         .references(StatCategoriesTable.name)

@@ -8,7 +8,7 @@ import dev.slne.surf.database.libs.org.jetbrains.exposed.v1.javatime.timestamp
 
 object PlayerStatsHistoryTable : Table("player_stats_history") {
     val id = long("id").autoIncrement()
-    val playerUuid = charUuid("player_uuid").references(PlayersTable.uuid)
+    val playerUuid = charUuid("player_uuid")
     val categoryName = varchar("category_name", 128)
         .transform({ key(it) }, { it.asString() })
         .references(StatCategoriesTable.name)

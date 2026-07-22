@@ -8,7 +8,6 @@ import dev.slne.surf.database.libs.org.jetbrains.exposed.v1.core.ResultRow
 import dev.slne.surf.database.libs.org.jetbrains.exposed.v1.core.and
 import dev.slne.surf.database.libs.org.jetbrains.exposed.v1.core.eq
 import dev.slne.surf.database.libs.org.jetbrains.exposed.v1.core.inList
-import dev.slne.surf.database.libs.org.jetbrains.exposed.v1.javatime.CurrentTimestamp
 import dev.slne.surf.database.libs.org.jetbrains.exposed.v1.r2dbc.*
 import dev.slne.surf.database.libs.org.jetbrains.exposed.v1.r2dbc.transactions.suspendTransaction
 import dev.slne.surf.stats.api.model.OptOutInfo
@@ -27,15 +26,6 @@ import java.util.*
 
 object StatsDatabaseService {
     private val log = logger()
-
-    suspend fun ensurePlayer(playerUuid: UUID, playerName: String) = suspendTransaction {
-        PlayersTable.upsert {
-            it[uuid] = playerUuid
-            it[name] = playerName
-            it[dataVersion] = 0
-            it[updatedAt] = CurrentTimestamp
-        }
-    }
 
     suspend fun toggleOptOutStatistic(
         playerUuid: SerializableUUID,
