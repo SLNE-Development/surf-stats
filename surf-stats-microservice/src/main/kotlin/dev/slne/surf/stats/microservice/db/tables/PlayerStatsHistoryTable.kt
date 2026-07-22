@@ -1,14 +1,14 @@
 package dev.slne.surf.stats.microservice.db.tables
 
 import dev.slne.surf.api.core.messages.adventure.key
-import dev.slne.surf.database.columns.charUuid
+import dev.slne.surf.database.columns.nativeUuid
 import dev.slne.surf.database.libs.org.jetbrains.exposed.v1.core.Table
 import dev.slne.surf.database.libs.org.jetbrains.exposed.v1.javatime.CurrentTimestamp
 import dev.slne.surf.database.libs.org.jetbrains.exposed.v1.javatime.timestamp
 
 object PlayerStatsHistoryTable : Table("player_stats_history") {
     val id = long("id").autoIncrement()
-    val playerUuid = charUuid("player_uuid").references(PlayersTable.uuid)
+    val playerUuid = nativeUuid("player_uuid")
     val categoryName = varchar("category_name", 128)
         .transform({ key(it) }, { it.asString() })
         .references(StatCategoriesTable.name)
@@ -18,7 +18,7 @@ object PlayerStatsHistoryTable : Table("player_stats_history") {
     val value = long("value")
     val serverName = varchar("server_name", 128).references(ServersTable.name)
     val createdAt = timestamp("created_at").defaultExpression(CurrentTimestamp)
-    val clanUuid = charUuid("clan_uuid").nullable()
+    val clanUuid = nativeUuid("clan_uuid").nullable()
 
     override val primaryKey = PrimaryKey(id)
 

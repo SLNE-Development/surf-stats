@@ -24,10 +24,9 @@ object PlayerStatsListener : Listener {
     fun onPlayerJoin(event: PlayerJoinEvent) {
         val player = event.player
         val uuid = player.uniqueId
-        val name = player.name
 
         plugin.launch {
-            surfStatsApiImpl.onPlayerJoin(uuid, name)
+            surfStatsApiImpl.onPlayerJoin(uuid)
         }
     }
 

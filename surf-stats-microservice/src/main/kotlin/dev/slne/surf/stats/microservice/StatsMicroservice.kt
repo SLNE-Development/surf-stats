@@ -5,7 +5,6 @@ import dev.slne.surf.database.DatabaseApi
 import dev.slne.surf.microservice.api.microservice.Microservice
 import dev.slne.surf.rabbitmq.api.ServerRabbitMQApi
 import dev.slne.surf.stats.microservice.handler.OptOutPacketHandler
-import dev.slne.surf.stats.microservice.handler.PlayerPacketHandler
 import dev.slne.surf.stats.microservice.handler.ServerPacketHandler
 import dev.slne.surf.stats.microservice.handler.StatsPacketHandler
 import kotlin.io.path.Path
@@ -20,7 +19,6 @@ class StatsMicroservice : Microservice() {
     override suspend fun onBootstrap(args: List<String>) {
         rabbitApi.registerRequestHandler(StatsPacketHandler)
         rabbitApi.registerRequestHandler(ServerPacketHandler)
-        rabbitApi.registerRequestHandler(PlayerPacketHandler)
         rabbitApi.registerRequestHandler(OptOutPacketHandler)
         rabbitApi.freezeAndConnect()
     }
