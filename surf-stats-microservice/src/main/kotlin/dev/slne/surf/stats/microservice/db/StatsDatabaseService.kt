@@ -15,13 +15,11 @@ import dev.slne.surf.stats.api.model.OptOutType
 import dev.slne.surf.stats.api.model.PlayerStats
 import dev.slne.surf.stats.api.model.PlayerStatsBatch
 import dev.slne.surf.stats.core.common.mapping.optOutStatisticMapping
+import dev.slne.surf.stats.microservice.db.StatsDatabaseService.saveBatch
 import dev.slne.surf.stats.microservice.db.tables.*
-import kotlinx.coroutines.async
-import kotlinx.coroutines.awaitAll
-import kotlinx.coroutines.coroutineScope
-import kotlinx.coroutines.flow.map
-import kotlinx.coroutines.flow.toList
-import kotlinx.coroutines.flow.toSet
+import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.FlowPreview
+import kotlinx.coroutines.flow.*
 import java.util.*
 
 object StatsDatabaseService {
@@ -98,11 +96,19 @@ object StatsDatabaseService {
         val categories = stats.map { it.category }.toSet()
         val keys = stats.map { it.key }.toSet()
 
-        StatCategoriesTable.batchInsert(categories, ignore = true) { category ->
+        StatCategoriesTable.batchInsert(
+            data = categories,
+            ignore = true,
+            shouldReturnGeneratedValues = false,
+        ) { category ->
             this[StatCategoriesTable.name] = category
         }
 
-        StatKeysTable.batchInsert(keys, ignore = true) { key ->
+        StatKeysTable.batchInsert(
+            data = keys,
+            ignore = true,
+            shouldReturnGeneratedValues = false,
+        ) { key ->
             this[StatKeysTable.name] = key
         }
     }
@@ -128,6 +134,7 @@ object StatsDatabaseService {
 
             PlayerStatsTable.batchUpsert(
                 data = filtered.stats,
+                shouldReturnGeneratedValues = false,
                 onUpdateExclude = listOf(PlayerStatsTable.lastDiffValue)
             ) { entry ->
                 this[PlayerStatsTable.playerUuid] = filtered.playerUuid
@@ -216,7 +223,10 @@ object StatsDatabaseService {
 
             val historyRows = deltas.filter { it.delta > 0 }
             if (historyRows.isNotEmpty()) {
-                PlayerStatsHistoryTable.batchInsert(historyRows) { row ->
+                PlayerStatsHistoryTable.batchInsert(
+                    data = historyRows,
+                    shouldReturnGeneratedValues = false,
+                ) { row ->
                     this[PlayerStatsHistoryTable.playerUuid] = filtered.playerUuid
                     this[PlayerStatsHistoryTable.categoryName] = row.category
                     this[PlayerStatsHistoryTable.statKeyName] = row.statKey
@@ -228,6 +238,7 @@ object StatsDatabaseService {
 
             PlayerStatsTable.batchUpsert(
                 data = deltas,
+                shouldReturnGeneratedValues = false,
                 onUpdateExclude = listOf(PlayerStatsTable.value)
             ) { row ->
                 this[PlayerStatsTable.playerUuid] = filtered.playerUuid
@@ -248,46 +259,83 @@ object StatsDatabaseService {
     )
 
     /**
-     * Saves multiple actual stat batches in parallel.
-     * Returns the set of player UUIDs that failed to save.
+     * Saves current player statistic batches.
+     *
+     * Batches for the same player and server are saved sequentially, while unrelated groups
+     * may be processed concurrently.
+     *
+     * @param batches the current statistic batches to save
+     * @return the UUIDs of players for which at least one batch failed to save
      */
-    suspend fun saveBatches(batches: List<PlayerStatsBatch>): Set<UUID> = coroutineScope {
-        batches.map { batch ->
-            async {
-                runCatching {
-                    saveBatch(batch)
-                }.onFailure { e ->
-                    log.atSevere()
-                        .withCause(e)
-                        .log("Failed to save stats for player ${batch.playerUuid}")
-                }.let { result ->
-                    if (result.isFailure) batch.playerUuid else null
-                }
-            }
-        }.awaitAll().filterNotNull().toSet()
-    }
+    suspend fun saveBatches(
+        batches: List<PlayerStatsBatch>
+    ): Set<UUID> = saveGroupedBatches(
+        batches = batches,
+        operationName = "stats",
+        save = ::saveBatch
+    )
 
     /**
-     * Saves multiple diff batches in parallel.
-     * Returns the set of player UUIDs that failed to save.
+     * Saves player statistic difference batches.
+     *
+     * Batches for the same player and server are saved sequentially to ensure that differences
+     * are calculated against baselines in the correct order. Unrelated groups may be processed
+     * concurrently.
+     *
+     * @param batches the statistic difference batches to save
+     * @return the UUIDs of players for which at least one batch failed to save
      */
     suspend fun saveDiffBatches(
         batches: List<PlayerStatsBatch>
-    ): Set<UUID> = coroutineScope {
-        batches.map { batch ->
-            async {
-                runCatching {
-                    saveDiffBatch(batch)
-                }.onFailure { e ->
-                    log.atSevere()
-                        .withCause(e)
-                        .log("Failed to save diff stats for player ${batch.playerUuid}")
-                }.let { result ->
-                    if (result.isFailure) {
-                        batch.playerUuid
-                    } else null
+    ): Set<UUID> = saveGroupedBatches(
+        batches = batches,
+        operationName = "diff stats",
+        save = ::saveDiffBatch
+    )
+
+    /**
+     * Saves player statistic batches while preserving their order per player and server.
+     *
+     * Batches belonging to the same player and server are processed sequentially to prevent
+     * older values from overwriting newer baselines. Different player-server groups are
+     * processed concurrently up to the configured [concurrency] limit.
+     *
+     * @param batches the statistic batches to save
+     * @param operationName the operation name used in failure log messages
+     * @param concurrency the maximum number of player-server groups processed concurrently
+     * @param save the suspending operation used to persist a single batch
+     * @return the UUIDs of players for which at least one batch failed to save
+     */
+    @OptIn(FlowPreview::class, ExperimentalCoroutinesApi::class)
+    private suspend fun saveGroupedBatches(
+        batches: List<PlayerStatsBatch>,
+        operationName: String,
+        concurrency: Int = DEFAULT_CONCURRENCY,
+        save: suspend (PlayerStatsBatch) -> Unit
+    ): Set<UUID> {
+        return batches
+            .groupBy { it.playerUuid to it.stats.serverName }
+            .values
+            .asFlow()
+            .flatMapMerge(concurrency = concurrency) { playerBatches ->
+                flow {
+                    for (batch in playerBatches) {
+                        val failed = runCatching {
+                            save(batch)
+                        }.onFailure { exception ->
+                            log.atSevere()
+                                .withCause(exception)
+                                .log(
+                                    "Failed to save $operationName for player ${batch.playerUuid}"
+                                )
+                        }.isFailure
+
+                        if (failed) {
+                            emit(batch.playerUuid)
+                        }
+                    }
                 }
             }
-        }.awaitAll().filterNotNull().toSet()
+            .toSet()
     }
 }
