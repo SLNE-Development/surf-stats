@@ -52,7 +52,7 @@ All new unit tests live in `surf-stats-core-client`'s test source set, including
 **`surf-stats-paper`** — trigger points
 
 - Create `src/main/kotlin/dev/slne/surf/stats/paper/listener/WorldSaveListener.kt` — debounced `WorldSaveEvent`
-- Modify `src/main/kotlin/dev/slne/surf/stats/paper/SurfStatsPlugin.kt` — file service init, flush helper, shutdown sync, listener registration
+- Modify `src/main/kotlin/dev/slne/surf/stats/paper/SurfStatsPlugin.kt` — file service init, generalised reflection flush helper, shutdown sync, listener registration
 
 **`surf-stats-microservice`** — persistence
 
@@ -1909,7 +1909,7 @@ git commit -m "✨ feat(microservice): persist advancement snapshots"
 
 **Interfaces:**
 - Consumes: `AdvancementsFileService.initialize` (Task 4), `SurfStatsApi.processAllPlayerAdvancements` (Task 6), existing `StatisticsManagerService.trackedPlayers`.
-- Produces: `SurfStatsPlugin.saveTrackedPlayerAdvancements()` — called by `WorldSaveListener` and `onDisableAsync`.
+- Produces: `SurfStatsPlugin.saveTrackedPlayerAdvancements()` — called by `WorldSaveListener` and `onDisableAsync`. Also replaces the private `flushAllPlayerStats` / `flushPlayerStats` pair with `flushAll(playerUuids, accessor)` / `flushViaReflection(player, accessor)`.
 
 Quit is already covered: `PlayerStatsListener.onPlayerQuit` calls `surfStatsApiImpl.onPlayerQuit`, which Task 6 extended. That file needs no change.
 
@@ -1932,9 +1932,57 @@ Add the import:
 import dev.slne.surf.stats.core.client.json.AdvancementsFileService
 ```
 
-- [ ] **Step 2: Add the flush helper and the sync entry point**
+- [ ] **Step 2: Generalise the reflection flush helper**
 
-Add to `SurfStatsPlugin`, next to the existing `saveTrackedPlayerStats` / `flushPlayerStats`:
+The advancement flush differs from the existing stats flush by one method name, so
+generalise rather than copy. Replace the existing `flushAllPlayerStats` and
+`flushPlayerStats` in `SurfStatsPlugin` with:
+
+```kotlin
+    private fun flushAll(playerUuids: Set<UUID>, accessor: String) {
+        playerUuids.forEach { uuid ->
+            server.getPlayer(uuid)?.let { flushViaReflection(it, accessor) }
+        }
+    }
+
+    /**
+     * Forces Minecraft to write one of the player's data files to disk.
+     *
+     * Uses reflection to call CraftPlayer -> ServerPlayer -> [accessor]() -> save(),
+     * which under Paper's Mojang mappings reaches `ServerStatsCounter.save()` for
+     * [STATS_ACCESSOR] and `PlayerAdvancements.save()` for [ADVANCEMENTS_ACCESSOR].
+     */
+    private fun flushViaReflection(player: Player, accessor: String) {
+        try {
+            val handle = player.javaClass.getMethod("getHandle").invoke(player)
+            val target = handle.javaClass.getMethod(accessor).invoke(handle)
+            target.javaClass.getMethod("save").invoke(target)
+        } catch (e: Exception) {
+            log.atWarning().withCause(e).log("Failed to flush $accessor for ${player.name}")
+        }
+    }
+```
+
+Update the existing call site inside `saveTrackedPlayerStats`:
+
+```kotlin
+            flushAll(trackedPlayers, STATS_ACCESSOR)
+```
+
+Add both accessor names to the existing `companion object`:
+
+```kotlin
+    companion object {
+        private val SAVE_INTERVAL = 5.minutes
+
+        private const val STATS_ACCESSOR = "getStats"
+        private const val ADVANCEMENTS_ACCESSOR = "getAdvancements"
+    }
+```
+
+- [ ] **Step 2b: Add the advancement sync entry point**
+
+Add to `SurfStatsPlugin`, next to the existing `saveTrackedPlayerStats`:
 
 ```kotlin
     /**
@@ -1952,32 +2000,10 @@ Add to `SurfStatsPlugin`, next to the existing `saveTrackedPlayerStats` / `flush
 
         log.atInfo().log("Saving advancements for ${trackedPlayers.size} players")
 
-        flushAllPlayerAdvancements(trackedPlayers)
+        flushAll(trackedPlayers, ADVANCEMENTS_ACCESSOR)
         SurfStatsApi.processAllPlayerAdvancements(trackedPlayers)
     }
-
-    private fun flushAllPlayerAdvancements(playerUuids: Set<UUID>) {
-        playerUuids.forEach { uuid ->
-            server.getPlayer(uuid)?.let { flushPlayerAdvancements(it) }
-        }
-    }
-
-    /**
-     * Forces Minecraft to write the player's advancement JSON file to disk.
-     * Uses reflection to call CraftPlayer -> ServerPlayer -> PlayerAdvancements.save().
-     */
-    private fun flushPlayerAdvancements(player: Player) {
-        try {
-            val handle = player.javaClass.getMethod("getHandle").invoke(player)
-            val advancements = handle.javaClass.getMethod("getAdvancements").invoke(handle)
-            advancements.javaClass.getMethod("save").invoke(advancements)
-        } catch (e: Exception) {
-            log.atWarning().withCause(e).log("Failed to flush advancements for ${player.name}")
-        }
-    }
 ```
-
-This mirrors the existing `flushPlayerStats` exactly, including its reliance on Paper's Mojang mappings.
 
 - [ ] **Step 3: Create the debounced world-save listener**
 
