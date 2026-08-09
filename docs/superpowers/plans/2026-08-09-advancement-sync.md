@@ -91,6 +91,12 @@ dependencies {
     api(projects.surfStatsCore.surfStatsCoreCommon)
     compileOnlyApi(libs.surf.clan.api)
 
+    // The `dev.slne.surf.api.gradle.core` convention plugin puts surf-api-core on
+    // `compileOnly` only, so it never reaches the test classpath. Tests need it for
+    // `key()` and, at runtime, for `logger()`. Same coordinate and version spec the
+    // convention plugin itself uses.
+    testImplementation("dev.slne.surf.api:surf-api-core:+")
+
     testImplementation("com.google.flogger:flogger:0.9")
     testRuntimeOnly("com.google.flogger:flogger-system-backend:0.9")
 
@@ -106,7 +112,11 @@ tasks.test {
 }
 ```
 
-This mirrors `surf-stats-core/surf-stats-core-common/build.gradle.kts` exactly. `flogger` is needed because `logger()` from `surf-api-core` is used by the classes under test in later tasks.
+This mirrors `surf-stats-core/surf-stats-core-common/build.gradle.kts`, plus the explicit
+`surf-api-core` line. That module declares a test block but has no test sources, so its
+block was never exercised and does not cover the `dev.slne.surf.api.core.*` helpers.
+`flogger` is needed because `logger()` from `surf-api-core` is used by the classes under
+test in later tasks.
 
 - [ ] **Step 2: Write the failing test**
 
