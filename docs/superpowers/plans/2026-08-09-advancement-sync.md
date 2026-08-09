@@ -529,6 +529,21 @@ class AdvancementsJsonModelTest {
     }
 
     @Test
+    fun `skips entries with a null criteria or done field`() {
+        val entries = AdvancementsJsonModel.parse(
+            """
+            {
+              "minecraft:story/null_criteria": { "criteria": null, "done": true },
+              "minecraft:story/null_done": { "criteria": {}, "done": null },
+              "minecraft:story/root": { "criteria": {}, "done": true }
+            }
+            """.trimIndent()
+        )
+
+        assertEquals(listOf("minecraft:story/root"), entries.map { it.advancement.asString() })
+    }
+
+    @Test
     fun `maps criteria with their timestamps`() {
         val entries = AdvancementsJsonModel.parse(
             """
@@ -626,10 +641,12 @@ object AdvancementsJsonModel {
     private const val DATA_VERSION_KEY = "DataVersion"
     private const val RECIPE_PATH_PREFIX = "recipes/"
 
+    // Deliberately no `coerceInputValues`: with it, a JSON null for `criteria` or
+    // `done` would be silently replaced by the property default, so a malformed
+    // entry would be accepted instead of skipped and logged.
     private val json = Json {
         ignoreUnknownKeys = true
         isLenient = true
-        coerceInputValues = true
     }
 
     fun parse(content: String): List<AdvancementEntry> {
@@ -677,7 +694,7 @@ object AdvancementsJsonModel {
 - [ ] **Step 4: Run the test to verify it passes**
 
 Run: `./gradlew :surf-stats-core:surf-stats-core-client:test --tests "*AdvancementsJsonModelTest*"`
-Expected: PASS, 9 tests.
+Expected: PASS, 10 tests.
 
 - [ ] **Step 5: Commit**
 
@@ -2216,7 +2233,7 @@ git commit -m "📝 docs: document advancement synchronisation"
 ## Verification Checklist
 
 - [ ] `./gradlew build` passes
-- [ ] All new unit tests pass (37 tests across 5 test classes)
+- [ ] All new unit tests pass (38 tests across 5 test classes)
 - [ ] No `recipes/…` rows in `player_advancements`
 - [ ] A revoked advancement disappears from the database
 - [ ] An unchanged snapshot produces no send
