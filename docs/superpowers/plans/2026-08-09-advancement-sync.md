@@ -354,10 +354,21 @@ class AdvancementTimestampTest {
     }
 
     @Test
-    fun `parses an ISO offset date time`() {
+    fun `parses an ISO instant with an offset`() {
         assertEquals(
             Instant.parse("2024-05-15T14:30:56Z"),
             AdvancementTimestamp.parse("2024-05-15T16:30:56+02:00")
+        )
+    }
+
+    // Since JDK 12 Instant.parse accepts arbitrary offsets, so the case above is
+    // already handled by the second strategy. Only an ISO timestamp without
+    // seconds — which Instant.parse rejects — reaches the OffsetDateTime fallback.
+    @Test
+    fun `parses an ISO offset date time without seconds`() {
+        assertEquals(
+            Instant.parse("2024-05-15T14:30:00Z"),
+            AdvancementTimestamp.parse("2024-05-15T16:30+02:00")
         )
     }
 
@@ -413,7 +424,7 @@ object AdvancementTimestamp {
 - [ ] **Step 4: Run the test to verify it passes**
 
 Run: `./gradlew :surf-stats-core:surf-stats-core-client:test --tests "*AdvancementTimestampTest*"`
-Expected: PASS, 6 tests.
+Expected: PASS, 7 tests — one per parsing strategy plus the failure cases.
 
 - [ ] **Step 5: Commit**
 
@@ -2205,7 +2216,7 @@ git commit -m "📝 docs: document advancement synchronisation"
 ## Verification Checklist
 
 - [ ] `./gradlew build` passes
-- [ ] All new unit tests pass (36 tests across 5 test classes)
+- [ ] All new unit tests pass (37 tests across 5 test classes)
 - [ ] No `recipes/…` rows in `player_advancements`
 - [ ] A revoked advancement disappears from the database
 - [ ] An unchanged snapshot produces no send
