@@ -72,7 +72,7 @@ advancements                          -- dimension table, mirrors stat_keys
   name              VARCHAR(255)  PK  -- "minecraft:adventure/adventuring_time"
 
 player_advancements
-  player_uuid       BINARY(16)    ┐
+  player_uuid       UUID          ┐
   advancement_name  VARCHAR(255)  ├─ PK   → FK advancements.name
   server_name       VARCHAR(128)  ┘       → FK servers.name
   done              BOOLEAN
@@ -81,7 +81,7 @@ player_advancements
   updated_at        TIMESTAMP
 
 player_advancement_criteria
-  player_uuid       BINARY(16)    ┐
+  player_uuid       UUID          ┐
   advancement_name  VARCHAR(255)  ├─ PK   → FK advancements.name
   criterion_name    VARCHAR(128)  │
   server_name       VARCHAR(128)  ┘       → FK servers.name
@@ -131,45 +131,57 @@ columns.
 
 The repository has no schema-migration mechanism — `DatabaseApi.create()` does not create
 tables, and no SQL or migration files exist in version control. The existing tables were
-created out of band. The same applies here; reference DDL (MariaDB/MySQL flavour, matching
-`nativeUuid` → `BINARY(16)`):
+created out of band, and the operator creates these three the same way, by hand, before the
+new microservice build goes live.
+
+PostgreSQL DDL. `nativeUuid` maps to the native `UUID` type, and Exposed's `timestamp()`
+maps to `TIMESTAMP` without time zone — matching the existing `servers.created_at` and
+`player_stats_history.created_at` columns.
 
 ```sql
 CREATE TABLE advancements (
     name VARCHAR(255) NOT NULL,
-    PRIMARY KEY (name)
+    CONSTRAINT pk_advancements PRIMARY KEY (name)
 );
 
 CREATE TABLE player_advancements (
-    player_uuid      BINARY(16)   NOT NULL,
+    player_uuid      UUID         NOT NULL,
     advancement_name VARCHAR(255) NOT NULL,
     server_name      VARCHAR(128) NOT NULL,
     done             BOOLEAN      NOT NULL DEFAULT FALSE,
     completed_at     TIMESTAMP    NULL,
-    criteria_done    INT          NOT NULL DEFAULT 0,
+    criteria_done    INTEGER      NOT NULL DEFAULT 0,
     updated_at       TIMESTAMP    NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    PRIMARY KEY (player_uuid, advancement_name, server_name),
+    CONSTRAINT pk_player_advancements
+        PRIMARY KEY (player_uuid, advancement_name, server_name),
     CONSTRAINT fk_player_advancements_advancement
         FOREIGN KEY (advancement_name) REFERENCES advancements (name),
     CONSTRAINT fk_player_advancements_server
-        FOREIGN KEY (server_name) REFERENCES servers (name),
-    INDEX idx_player_advancements_player_done (player_uuid, done),
-    INDEX idx_player_advancements_advancement_done (advancement_name, done, completed_at)
+        FOREIGN KEY (server_name) REFERENCES servers (name)
 );
 
+CREATE INDEX idx_player_advancements_player_done
+    ON player_advancements (player_uuid, done);
+CREATE INDEX idx_player_advancements_advancement_done
+    ON player_advancements (advancement_name, done, completed_at);
+
 CREATE TABLE player_advancement_criteria (
-    player_uuid      BINARY(16)   NOT NULL,
+    player_uuid      UUID         NOT NULL,
     advancement_name VARCHAR(255) NOT NULL,
     criterion_name   VARCHAR(128) NOT NULL,
     server_name      VARCHAR(128) NOT NULL,
     awarded_at       TIMESTAMP    NULL,
-    PRIMARY KEY (player_uuid, advancement_name, criterion_name, server_name),
+    CONSTRAINT pk_player_advancement_criteria
+        PRIMARY KEY (player_uuid, advancement_name, criterion_name, server_name),
     CONSTRAINT fk_player_advancement_criteria_advancement
         FOREIGN KEY (advancement_name) REFERENCES advancements (name),
     CONSTRAINT fk_player_advancement_criteria_server
         FOREIGN KEY (server_name) REFERENCES servers (name)
 );
 ```
+
+Both delete predicates (`WHERE player_uuid = ? AND server_name = ?`) are served by the
+leading `player_uuid` column of each primary key; no additional index is needed.
 
 ## API models (`surf-stats-api`)
 
