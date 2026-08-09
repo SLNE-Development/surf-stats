@@ -36,7 +36,7 @@ object PlayerStatsRepositoryImpl : PlayerStatsRepository {
         val failed = results.filterValues { it.isFailure }.keys
 
         if (failed.isNotEmpty()) {
-            log.atWarning().log("Failed to load stats for {} players: {}", failed.size, failed)
+            log.atWarning().log("Failed to load stats for %s players: %s", failed.size, failed)
         }
 
         return successful

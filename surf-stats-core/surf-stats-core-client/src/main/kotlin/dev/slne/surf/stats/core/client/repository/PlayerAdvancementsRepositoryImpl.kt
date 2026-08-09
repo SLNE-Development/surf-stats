@@ -19,7 +19,7 @@ object PlayerAdvancementsRepositoryImpl : PlayerAdvancementsRepository {
         val failed = results.filterValues { it.isFailure }.keys
         if (failed.isNotEmpty()) {
             log.atWarning()
-                .log("Failed to load advancements for {} players: {}", failed.size, failed)
+                .log("Failed to load advancements for %s players: %s", failed.size, failed)
         }
 
         return results.mapNotNull { (uuid, result) ->

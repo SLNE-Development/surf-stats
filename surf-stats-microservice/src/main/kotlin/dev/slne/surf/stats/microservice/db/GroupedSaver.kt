@@ -1,6 +1,7 @@
 package dev.slne.surf.stats.microservice.db
 
 import dev.slne.surf.api.core.util.logger
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.FlowPreview
 import kotlinx.coroutines.flow.DEFAULT_CONCURRENCY
@@ -41,6 +42,8 @@ internal suspend fun <T> saveGrouped(
 
                 val failed = runCatching { save(item) }
                     .onFailure { exception ->
+                        if (exception is CancellationException) throw exception
+
                         log.atSevere()
                             .withCause(exception)
                             .log("Failed to save $operationName for player $playerUuid")

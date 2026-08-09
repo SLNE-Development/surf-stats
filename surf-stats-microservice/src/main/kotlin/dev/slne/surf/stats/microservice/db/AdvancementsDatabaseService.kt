@@ -45,9 +45,13 @@ object AdvancementsDatabaseService {
             return
         }
 
+        // Two entries normalising to the same Key would violate the primary key and
+        // make this snapshot fail on every retry until the source file changes.
+        val entries = snapshot.advancements.distinctBy { it.advancement }
+
         suspendTransaction {
             AdvancementsTable.batchInsert(
-                data = snapshot.map { it.advancement }.toSet(),
+                data = entries.map { it.advancement }.toSet(),
                 ignore = true,
                 shouldReturnGeneratedValues = false,
             ) { advancement ->
@@ -65,7 +69,7 @@ object AdvancementsDatabaseService {
             }
 
             PlayerAdvancementsTable.batchInsert(
-                data = snapshot.advancements,
+                data = entries,
                 shouldReturnGeneratedValues = false,
             ) { entry ->
                 this[PlayerAdvancementsTable.playerUuid] = snapshot.playerUuid
@@ -76,21 +80,19 @@ object AdvancementsDatabaseService {
                 this[PlayerAdvancementsTable.criteriaDone] = entry.criteriaDone
             }
 
-            val criteriaRows = snapshot.advancements.flatMap { entry ->
+            val criteriaRows = entries.flatMap { entry ->
                 entry.criteria.map { criterion -> entry.advancement to criterion }
             }
 
-            if (criteriaRows.isNotEmpty()) {
-                PlayerAdvancementCriteriaTable.batchInsert(
-                    data = criteriaRows,
-                    shouldReturnGeneratedValues = false,
-                ) { (advancement, criterion) ->
-                    this[PlayerAdvancementCriteriaTable.playerUuid] = snapshot.playerUuid
-                    this[PlayerAdvancementCriteriaTable.advancementName] = advancement
-                    this[PlayerAdvancementCriteriaTable.criterionName] = criterion.name
-                    this[PlayerAdvancementCriteriaTable.serverName] = snapshot.serverName
-                    this[PlayerAdvancementCriteriaTable.awardedAt] = criterion.awardedAt
-                }
+            PlayerAdvancementCriteriaTable.batchInsert(
+                data = criteriaRows,
+                shouldReturnGeneratedValues = false,
+            ) { (advancement, criterion) ->
+                this[PlayerAdvancementCriteriaTable.playerUuid] = snapshot.playerUuid
+                this[PlayerAdvancementCriteriaTable.advancementName] = advancement
+                this[PlayerAdvancementCriteriaTable.criterionName] = criterion.name
+                this[PlayerAdvancementCriteriaTable.serverName] = snapshot.serverName
+                this[PlayerAdvancementCriteriaTable.awardedAt] = criterion.awardedAt
             }
         }
     }

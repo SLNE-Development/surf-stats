@@ -15,7 +15,7 @@ object PlayerAdvancementCriteriaTable : Table("player_advancement_criteria") {
      * Criterion names are free-form strings, so this stays a plain varchar —
      * `Key.key()` throws on names datapacks are allowed to use.
      */
-    val criterionName = varchar("criterion_name", 128)
+    val criterionName = varchar("criterion_name", 255)
     val serverName = varchar("server_name", 128).references(ServersTable.name)
 
     /** `null` when the timestamp in the source file could not be parsed. */

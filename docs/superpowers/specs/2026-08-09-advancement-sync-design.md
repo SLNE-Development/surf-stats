@@ -83,7 +83,7 @@ player_advancements
 player_advancement_criteria
   player_uuid       UUID          ┐
   advancement_name  VARCHAR(255)  ├─ PK   → FK advancements.name
-  criterion_name    VARCHAR(128)  │
+  criterion_name    VARCHAR(255)  │
   server_name       VARCHAR(128)  ┘       → FK servers.name
   awarded_at        TIMESTAMP NULL
 ```
@@ -168,7 +168,7 @@ CREATE INDEX idx_player_advancements_advancement_done
 CREATE TABLE player_advancement_criteria (
     player_uuid      UUID         NOT NULL,
     advancement_name VARCHAR(255) NOT NULL,
-    criterion_name   VARCHAR(128) NOT NULL,
+    criterion_name   VARCHAR(255) NOT NULL,
     server_name      VARCHAR(128) NOT NULL,
     awarded_at       TIMESTAMP    NULL,
     CONSTRAINT pk_player_advancement_criteria

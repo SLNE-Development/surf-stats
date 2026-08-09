@@ -187,7 +187,7 @@ dependencies {
 
 ## Database Schema
 
-The microservice creates and manages these tables:
+The microservice reads and writes these tables:
 
 | Table | Purpose |
 |---|---|
@@ -200,6 +200,8 @@ The microservice creates and manages these tables:
 | `advancements` | Distinct advancement identifiers (e.g. `minecraft:story/root`) |
 | `player_advancements` | Current advancement state per `(player, advancement, server)` — `done`, `completed_at`, `criteria_done` — replaced as a whole snapshot |
 | `player_advancement_criteria` | Awarded criteria per advancement with `awarded_at` |
+
+The three advancement tables must be created manually before deploying this version. DDL for them is in `docs/superpowers/specs/2026-08-09-advancement-sync-design.md`.
 
 ## License
 

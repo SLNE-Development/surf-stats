@@ -195,4 +195,28 @@ class AdvancementSyncStateServiceTest {
 
         assertEquals(otherServer, AdvancementSyncStateService.selectChanged(otherServer))
     }
+
+    @Test
+    fun `detects a criterion gaining a timestamp`() {
+        AdvancementSyncStateService.markSynced(
+            listOf(
+                snapshot(
+                    advancements = listOf(
+                        root(done = false, criteria = listOf(AdvancementCriterion("a", null)))
+                    )
+                )
+            ),
+            failed = emptySet()
+        )
+
+        val dated = listOf(
+            snapshot(
+                advancements = listOf(
+                    root(done = false, criteria = listOf(AdvancementCriterion("a", awardedAt)))
+                )
+            )
+        )
+
+        assertEquals(dated, AdvancementSyncStateService.selectChanged(dated))
+    }
 }

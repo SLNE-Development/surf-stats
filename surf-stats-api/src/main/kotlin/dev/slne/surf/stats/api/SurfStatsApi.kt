@@ -55,6 +55,11 @@ interface SurfStatsApi {
     /**
      * Replaces everything stored for `(playerUuid, serverName)` with [advancements].
      *
+     * [playerUuid] must equal `advancements.playerUuid` — this throws
+     * [IllegalArgumentException] otherwise, since the packet is keyed by the
+     * snapshot's own `playerUuid` and a mismatched pair would silently write to
+     * the wrong player.
+     *
      * The snapshot must be complete — anything missing from it is deleted. An
      * empty snapshot is ignored rather than treated as "the player has nothing",
      * so that a failed read can never wipe stored data.

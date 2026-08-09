@@ -42,7 +42,9 @@ object AdvancementSyncStateServiceImpl : AdvancementSyncStateService {
                     .sortedBy { it.name }
                     .forEach { criterion ->
                         result = 31 * result + criterion.name.hashCode()
-                        result = 31 * result + (criterion.awardedAt?.hashCode() ?: 0)
+                        // Not 0: Instant.EPOCH.hashCode() == 0, which would make a
+                        // criterion going from unawarded to awarded-at-epoch hash the same.
+                        result = 31 * result + (criterion.awardedAt?.hashCode() ?: Int.MIN_VALUE)
                     }
             }
 

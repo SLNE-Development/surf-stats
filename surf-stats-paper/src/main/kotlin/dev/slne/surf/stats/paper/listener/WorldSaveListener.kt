@@ -20,13 +20,13 @@ import kotlin.time.Duration.Companion.seconds
  * handled one are ignored.
  */
 object WorldSaveListener : Listener {
-    private val DEBOUNCE = 30.seconds.inWholeMilliseconds
+    private val DEBOUNCE = 30.seconds.inWholeNanoseconds
 
     private val lastRun = AtomicLong(0)
 
     @EventHandler(priority = EventPriority.MONITOR)
     fun onWorldSave(event: WorldSaveEvent) {
-        val now = System.currentTimeMillis()
+        val now = System.nanoTime()
         val previous = lastRun.get()
 
         if (now - previous < DEBOUNCE) {

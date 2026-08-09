@@ -161,6 +161,10 @@ class SurfStatsApiImpl : SurfStatsApi {
             return
         }
 
+        require(advancements.playerUuid == playerUuid) {
+            "playerUuid $playerUuid does not match the snapshot's ${advancements.playerUuid}"
+        }
+
         statsInstance.rabbitApi.sendRequest(
             SaveAdvancementsRequestPacket(players = listOf(advancements))
         )
