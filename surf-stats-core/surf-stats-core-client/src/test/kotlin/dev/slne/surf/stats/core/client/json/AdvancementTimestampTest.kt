@@ -32,10 +32,21 @@ class AdvancementTimestampTest {
     }
 
     @Test
-    fun `parses an ISO offset date time`() {
+    fun `parses an ISO instant with an offset`() {
         assertEquals(
             Instant.parse("2024-05-15T14:30:56Z"),
             AdvancementTimestamp.parse("2024-05-15T16:30:56+02:00")
+        )
+    }
+
+    // Since JDK 12 Instant.parse accepts arbitrary offsets, so the case above is
+    // already handled by the second strategy. Only an ISO timestamp without
+    // seconds — which Instant.parse rejects — reaches the OffsetDateTime fallback.
+    @Test
+    fun `parses an ISO offset date time without seconds`() {
+        assertEquals(
+            Instant.parse("2024-05-15T14:30:00Z"),
+            AdvancementTimestamp.parse("2024-05-15T16:30+02:00")
         )
     }
 
