@@ -78,6 +78,21 @@ class AdvancementsJsonModelTest {
     }
 
     @Test
+    fun `skips entries with a null criteria or done field`() {
+        val entries = AdvancementsJsonModel.parse(
+            """
+            {
+              "minecraft:story/null_criteria": { "criteria": null, "done": true },
+              "minecraft:story/null_done": { "criteria": {}, "done": null },
+              "minecraft:story/root": { "criteria": {}, "done": true }
+            }
+            """.trimIndent()
+        )
+
+        assertEquals(listOf("minecraft:story/root"), entries.map { it.advancement.asString() })
+    }
+
+    @Test
     fun `maps criteria with their timestamps`() {
         val entries = AdvancementsJsonModel.parse(
             """

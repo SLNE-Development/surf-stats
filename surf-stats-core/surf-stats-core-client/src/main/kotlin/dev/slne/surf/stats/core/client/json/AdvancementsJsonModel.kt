@@ -35,10 +35,12 @@ object AdvancementsJsonModel {
     private const val DATA_VERSION_KEY = "DataVersion"
     private const val RECIPE_PATH_PREFIX = "recipes/"
 
+    // Deliberately no `coerceInputValues`: with it, a JSON null for `criteria` or
+    // `done` would be silently replaced by the property default, so a malformed
+    // entry would be accepted instead of skipped and logged.
     private val json = Json {
         ignoreUnknownKeys = true
         isLenient = true
-        coerceInputValues = true
     }
 
     fun parse(content: String): List<AdvancementEntry> {
