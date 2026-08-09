@@ -17,8 +17,6 @@ import dev.slne.surf.stats.api.model.PlayerStatsBatch
 import dev.slne.surf.stats.core.common.mapping.optOutStatisticMapping
 import dev.slne.surf.stats.microservice.db.StatsDatabaseService.saveBatch
 import dev.slne.surf.stats.microservice.db.tables.*
-import kotlinx.coroutines.ExperimentalCoroutinesApi
-import kotlinx.coroutines.FlowPreview
 import kotlinx.coroutines.flow.*
 import java.util.*
 
@@ -269,9 +267,11 @@ object StatsDatabaseService {
      */
     suspend fun saveBatches(
         batches: List<PlayerStatsBatch>
-    ): Set<UUID> = saveGroupedBatches(
-        batches = batches,
+    ): Set<UUID> = saveGrouped(
+        items = batches,
         operationName = "stats",
+        playerUuidOf = { it.playerUuid },
+        groupKeyOf = { it.playerUuid to it.stats.serverName },
         save = ::saveBatch
     )
 
@@ -287,55 +287,11 @@ object StatsDatabaseService {
      */
     suspend fun saveDiffBatches(
         batches: List<PlayerStatsBatch>
-    ): Set<UUID> = saveGroupedBatches(
-        batches = batches,
+    ): Set<UUID> = saveGrouped(
+        items = batches,
         operationName = "diff stats",
+        playerUuidOf = { it.playerUuid },
+        groupKeyOf = { it.playerUuid to it.stats.serverName },
         save = ::saveDiffBatch
     )
-
-    /**
-     * Saves player statistic batches while preserving their order per player and server.
-     *
-     * Batches belonging to the same player and server are processed sequentially to prevent
-     * older values from overwriting newer baselines. Different player-server groups are
-     * processed concurrently up to the configured [concurrency] limit.
-     *
-     * @param batches the statistic batches to save
-     * @param operationName the operation name used in failure log messages
-     * @param concurrency the maximum number of player-server groups processed concurrently
-     * @param save the suspending operation used to persist a single batch
-     * @return the UUIDs of players for which at least one batch failed to save
-     */
-    @OptIn(FlowPreview::class, ExperimentalCoroutinesApi::class)
-    private suspend fun saveGroupedBatches(
-        batches: List<PlayerStatsBatch>,
-        operationName: String,
-        concurrency: Int = DEFAULT_CONCURRENCY,
-        save: suspend (PlayerStatsBatch) -> Unit
-    ): Set<UUID> {
-        return batches
-            .groupBy { it.playerUuid to it.stats.serverName }
-            .values
-            .asFlow()
-            .flatMapMerge(concurrency = concurrency) { playerBatches ->
-                flow {
-                    for (batch in playerBatches) {
-                        val failed = runCatching {
-                            save(batch)
-                        }.onFailure { exception ->
-                            log.atSevere()
-                                .withCause(exception)
-                                .log(
-                                    "Failed to save $operationName for player ${batch.playerUuid}"
-                                )
-                        }.isFailure
-
-                        if (failed) {
-                            emit(batch.playerUuid)
-                        }
-                    }
-                }
-            }
-            .toSet()
-    }
 }
