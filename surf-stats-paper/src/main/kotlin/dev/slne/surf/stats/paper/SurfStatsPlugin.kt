@@ -9,11 +9,13 @@ import dev.slne.surf.api.paper.nms.NmsUseWithCaution
 import dev.slne.surf.api.paper.nms.bridges.SurfPaperNmsPlayerBridge
 import dev.slne.surf.core.api.common.SurfCoreApi
 import dev.slne.surf.stats.api.SurfStatsApi
+import dev.slne.surf.stats.core.client.json.AdvancementsFileService
 import dev.slne.surf.stats.core.client.json.StatsFileService
 import dev.slne.surf.stats.core.client.service.StatisticsManagerService
 import dev.slne.surf.stats.core.client.statsInstance
 import dev.slne.surf.stats.paper.commands.statsCommand
 import dev.slne.surf.stats.paper.listener.PlayerStatsListener
+import dev.slne.surf.stats.paper.listener.WorldSaveListener
 import dev.slne.surf.stats.paper.menu.statsOptOutView
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
@@ -57,6 +59,7 @@ class SurfStatsPlugin : SuspendingJavaPlugin() {
             .log("Processing final stats for ${trackedPlayers.size} players on server shutdown")
 
         saveTrackedPlayerStats()
+        saveTrackedPlayerAdvancements()
 
         statsInstance.onDisable()
     }
@@ -74,11 +77,19 @@ class SurfStatsPlugin : SuspendingJavaPlugin() {
         // Initialize file service
         StatsFileService.initialize(statsDirectory)
 
+        // stats/ and advancements/ are siblings inside the world directory; the
+        // NMS bridge exposes only the stats path.
+        val advancementsDirectory = statsDirectory.resolveSibling("advancements")
+        log.atInfo().log("Advancements directory: $advancementsDirectory")
+
+        AdvancementsFileService.initialize(advancementsDirectory)
+
         log.atInfo().log("Services initialized and registered")
     }
 
     private fun registerListeners() {
         PlayerStatsListener.register()
+        WorldSaveListener.register()
     }
 
     private fun startPeriodicDiffSave() {
@@ -106,32 +117,57 @@ class SurfStatsPlugin : SuspendingJavaPlugin() {
         if (trackedPlayers.isNotEmpty()) {
             log.atInfo().log("Saving diffs for ${trackedPlayers.size} players")
 
-            flushAllPlayerStats(trackedPlayers)
+            flushAll(trackedPlayers, STATS_ACCESSOR)
             SurfStatsApi.processAllPlayerStats(trackedPlayers)
         }
     }
 
-    private fun flushAllPlayerStats(playerUuids: Set<UUID>) {
+    /**
+     * Flushes and ships advancements for every tracked player.
+     *
+     * Called from [WorldSaveListener] and on shutdown. Players whose snapshot is
+     * unchanged are filtered out inside the API.
+     */
+    suspend fun saveTrackedPlayerAdvancements() {
+        val trackedPlayers = StatisticsManagerService.trackedPlayers
+
+        if (trackedPlayers.isEmpty()) {
+            return
+        }
+
+        log.atInfo().log("Saving advancements for ${trackedPlayers.size} players")
+
+        flushAll(trackedPlayers, ADVANCEMENTS_ACCESSOR)
+        SurfStatsApi.processAllPlayerAdvancements(trackedPlayers)
+    }
+
+    private fun flushAll(playerUuids: Set<UUID>, accessor: String) {
         playerUuids.forEach { uuid ->
-            server.getPlayer(uuid)?.let { flushPlayerStats(it) }
+            server.getPlayer(uuid)?.let { flushViaReflection(it, accessor) }
         }
     }
 
     /**
-     * Forces Minecraft to write the player's stats JSON file to disk.
-     * Uses reflection to call CraftPlayer -> ServerPlayer -> ServerStatsCounter.save().
+     * Forces Minecraft to write one of the player's data files to disk.
+     *
+     * Uses reflection to call CraftPlayer -> ServerPlayer -> [accessor]() -> save(),
+     * which under Paper's Mojang mappings reaches `ServerStatsCounter.save()` for
+     * [STATS_ACCESSOR] and `PlayerAdvancements.save()` for [ADVANCEMENTS_ACCESSOR].
      */
-    private fun flushPlayerStats(player: Player) {
+    private fun flushViaReflection(player: Player, accessor: String) {
         try {
             val handle = player.javaClass.getMethod("getHandle").invoke(player)
-            val stats = handle.javaClass.getMethod("getStats").invoke(handle)
-            stats.javaClass.getMethod("save").invoke(stats)
+            val target = handle.javaClass.getMethod(accessor).invoke(handle)
+            target.javaClass.getMethod("save").invoke(target)
         } catch (e: Exception) {
-            log.atWarning().withCause(e).log("Failed to flush stats for ${player.name}")
+            log.atWarning().withCause(e).log("Failed to flush $accessor for ${player.name}")
         }
     }
 
     companion object {
         private val SAVE_INTERVAL = 5.minutes
+
+        private const val STATS_ACCESSOR = "getStats"
+        private const val ADVANCEMENTS_ACCESSOR = "getAdvancements"
     }
 }

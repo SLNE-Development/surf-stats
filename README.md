@@ -56,12 +56,22 @@ Surf Stats does not ship its own `config.yml` or `database.yml`. Configuration i
 
 The Paper plugin reads Minecraft's native `<world>/stats/<uuid>.json` files and ships absolute current values to the microservice over RabbitMQ. The microservice owns the database, computes per-tuple deltas against the `player_stats.last_diff_value` baseline, and writes both the current row and the history row in a single transaction.
 
+It also reads `<world>/advancements/<uuid>.json` and ships complete advancement snapshots. Recipe advancements (`recipes/…`) are filtered out client-side — they outnumber real advancements roughly ten to one. No history is kept for advancements: the microservice replaces everything stored for `(player, server)` inside one transaction, so revoked advancements disappear from the database as well.
+
 Statistics are processed at four points:
 
 1. **Player join** — loads the player's initial snapshot into memory.
 2. **Player quit** — 1 second after disconnect (gives Minecraft time to flush the stats file), computes final diffs and saves.
 3. **Periodic** — every 5 minutes, all tracked players are flushed to disk and saved.
 4. **Server shutdown** — final flush + save for all tracked players before disconnect.
+
+Advancements are processed at three points:
+
+1. **Player quit** — in the same 1 second delayed pass as the statistics.
+2. **World save** — on `WorldSaveEvent`, debounced to at most once every 30 seconds since the event fires once per world.
+3. **Server shutdown** — final flush + save for all tracked players.
+
+A per-player content hash suppresses advancement sends when the snapshot is unchanged since the last successful send, so most world saves ship nothing.
 
 All async work uses Folia-compatible coroutines (`mccoroutine-folia`) and a plugin-scoped `CoroutineScope` that is cancelled on shutdown.
 
@@ -93,6 +103,10 @@ interface SurfStatsApi {
     suspend fun getPlayerStats(playerUuid: UUID): PlayerStats
     suspend fun saveStats(playerUuid: UUID, stats: PlayerStats)
     suspend fun saveDiffStats(playerUuid: UUID, stats: PlayerStats)
+    suspend fun getPlayerAdvancements(playerUuid: UUID): PlayerAdvancements
+    suspend fun saveAdvancements(playerUuid: UUID, advancements: PlayerAdvancements)
+    suspend fun processPlayerAdvancements(playerUuid: UUID)
+    suspend fun processAllPlayerAdvancements(uuids: Set<UUID>)
 }
 ```
 
@@ -103,6 +117,10 @@ interface SurfStatsApi {
 | `getPlayerStats` | Load the player's current absolute stats from disk |
 | `saveStats` | Send a `CURRENT`-type batch (UPSERT `player_stats.value`) |
 | `saveDiffStats` | Send a `DIFFERENCE`-type batch — pass **absolute current values**; the microservice computes the delta against `last_diff_value` and appends to `player_stats_history` |
+| `getPlayerAdvancements` | Load the player's current advancement snapshot from disk (recipes excluded) |
+| `saveAdvancements` | Replace everything stored for `(player, server)` with the given snapshot — must be complete; empty snapshots are ignored |
+| `processPlayerAdvancements` | Load one player's advancements and send them if they changed |
+| `processAllPlayerAdvancements` | Same, batched for many players |
 
 > **Breaking change:** `saveDiffStats` now expects absolute current values, not pre-computed deltas. Sending deltas under the new contract will make the per-tuple baseline drift and corrupt history. The first call per `(player, category, key, server)` writes `entry.value` as the first delta (baseline starts at 0).
 
@@ -169,7 +187,7 @@ dependencies {
 
 ## Database Schema
 
-The microservice creates and manages these tables:
+The microservice reads and writes these tables:
 
 | Table | Purpose |
 |---|---|
@@ -179,6 +197,11 @@ The microservice creates and manages these tables:
 | `player_stats` | Current absolute `value` per `(player, category, key, server)` plus `last_diff_value` baseline used for server-side delta computation — UPSERT |
 | `player_stats_history` | Append-only delta entries with `created_at` + optional `clan_uuid` |
 | `player_stat_optouts` | Per-player opt-out list of `(category, key)` pairs to exclude from persistence |
+| `advancements` | Distinct advancement identifiers (e.g. `minecraft:story/root`) |
+| `player_advancements` | Current advancement state per `(player, advancement, server)` — `done`, `completed_at`, `criteria_done` — replaced as a whole snapshot |
+| `player_advancement_criteria` | Awarded criteria per advancement with `awarded_at` |
+
+The three advancement tables must be created manually before deploying this version. DDL for them is in `docs/superpowers/specs/2026-08-09-advancement-sync-design.md`.
 
 ## License
 

@@ -5,10 +5,14 @@ import dev.slne.clan.api.clan.findClanByPlayer
 import dev.slne.surf.api.core.util.logger
 import dev.slne.surf.core.api.common.SurfCoreApi
 import dev.slne.surf.stats.api.SurfStatsApi
+import dev.slne.surf.stats.api.model.PlayerAdvancements
 import dev.slne.surf.stats.api.model.PlayerStats
 import dev.slne.surf.stats.api.model.PlayerStatsBatch
+import dev.slne.surf.stats.core.client.repository.PlayerAdvancementsRepository
 import dev.slne.surf.stats.core.client.repository.PlayerStatsRepository
+import dev.slne.surf.stats.core.client.service.AdvancementSyncStateService
 import dev.slne.surf.stats.core.client.service.StatisticsManagerService
+import dev.slne.surf.stats.core.common.packets.SaveAdvancementsRequestPacket
 import dev.slne.surf.stats.core.common.packets.SaveStatsRequestPacket
 import java.util.*
 
@@ -30,7 +34,9 @@ class SurfStatsApiImpl : SurfStatsApi {
 
     suspend fun onPlayerQuit(playerUuid: UUID) {
         processPlayerStats(playerUuid)
+        processPlayerAdvancements(playerUuid)
         StatisticsManagerService.untrackPlayer(playerUuid)
+        AdvancementSyncStateService.forget(playerUuid)
     }
 
     override suspend fun processPlayerStats(playerUuid: UUID) {
@@ -142,6 +148,62 @@ class SurfStatsApiImpl : SurfStatsApi {
                 type = SaveStatsRequestPacket.Type.DIFFERENCE
             )
         )
+    }
+
+    override suspend fun getPlayerAdvancements(playerUuid: UUID): PlayerAdvancements =
+        PlayerAdvancementsRepository.loadAdvancements(playerUuid)
+
+    override suspend fun saveAdvancements(
+        playerUuid: UUID,
+        advancements: PlayerAdvancements,
+    ) {
+        if (advancements.isEmpty()) {
+            return
+        }
+
+        require(advancements.playerUuid == playerUuid) {
+            "playerUuid $playerUuid does not match the snapshot's ${advancements.playerUuid}"
+        }
+
+        statsInstance.rabbitApi.sendRequest(
+            SaveAdvancementsRequestPacket(players = listOf(advancements))
+        )
+    }
+
+    override suspend fun processPlayerAdvancements(playerUuid: UUID) {
+        processAllPlayerAdvancements(setOf(playerUuid))
+    }
+
+    override suspend fun processAllPlayerAdvancements(uuids: Set<UUID>) {
+        if (uuids.isEmpty()) {
+            return
+        }
+
+        runCatching {
+            val snapshots = PlayerAdvancementsRepository.loadAllAdvancements(uuids)
+                .filter { it.isNotEmpty() }
+
+            val changed = AdvancementSyncStateService.selectChanged(snapshots)
+            if (changed.isEmpty()) {
+                return@runCatching
+            }
+
+            val response = statsInstance.rabbitApi.sendRequest(
+                SaveAdvancementsRequestPacket(players = changed)
+            )
+            val failed = response.value.toSet()
+
+            if (failed.isNotEmpty()) {
+                log.atWarning()
+                    .log("Failed to save advancements for ${failed.size}/${changed.size} players")
+            }
+
+            AdvancementSyncStateService.markSynced(sent = changed, failed = failed)
+        }.onFailure { error ->
+            log.atSevere()
+                .withCause(error)
+                .log("Failed to process advancements for ${uuids.size} players")
+        }
     }
 }
 

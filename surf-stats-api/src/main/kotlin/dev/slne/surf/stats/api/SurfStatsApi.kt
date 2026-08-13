@@ -1,6 +1,7 @@
 package dev.slne.surf.stats.api
 
 import dev.slne.surf.api.core.util.requiredService
+import dev.slne.surf.stats.api.model.PlayerAdvancements
 import dev.slne.surf.stats.api.model.PlayerStats
 import java.util.*
 
@@ -43,6 +44,42 @@ interface SurfStatsApi {
      * contract will make the baseline drift and corrupt history.
      */
     suspend fun saveDiffStats(playerUuid: UUID, stats: PlayerStats)
+
+    /**
+     * Loads the player's current advancement snapshot from disk.
+     *
+     * Recipe advancements are excluded.
+     */
+    suspend fun getPlayerAdvancements(playerUuid: UUID): PlayerAdvancements
+
+    /**
+     * Replaces everything stored for `(playerUuid, serverName)` with [advancements].
+     *
+     * [playerUuid] must equal `advancements.playerUuid` — this throws
+     * [IllegalArgumentException] otherwise, since the packet is keyed by the
+     * snapshot's own `playerUuid` and a mismatched pair would silently write to
+     * the wrong player.
+     *
+     * The snapshot must be complete — anything missing from it is deleted. An
+     * empty snapshot is ignored rather than treated as "the player has nothing",
+     * so that a failed read can never wipe stored data.
+     *
+     * This bypasses the change-detection used by [processPlayerAdvancements] and
+     * always sends.
+     */
+    suspend fun saveAdvancements(playerUuid: UUID, advancements: PlayerAdvancements)
+
+    /**
+     * Loads one player's advancements from disk and sends them if they changed
+     * since the last successful send.
+     */
+    suspend fun processPlayerAdvancements(playerUuid: UUID)
+
+    /**
+     * Same as [processPlayerAdvancements], batched for many players. Players whose
+     * snapshot is unchanged are not sent at all.
+     */
+    suspend fun processAllPlayerAdvancements(uuids: Set<UUID>)
 
     companion object : SurfStatsApi by api {
         val INSTANCE get() = api

@@ -30,6 +30,7 @@ gradle-app.setting
 
 # Claude Code
 .claude/
+.superpowers/
 .kotlin
 
 settings.local.json
