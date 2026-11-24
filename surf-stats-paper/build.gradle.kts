@@ -14,7 +14,7 @@ surfPaperPluginApi {
 
     serverDependencies {
         registerSoft(
-            "surf-clan-paper",
+            "surf-player-paper",
             joinClassPath = true,
             loadOrder = PaperPluginDescription.RelativeLoadOrder.BEFORE
         )

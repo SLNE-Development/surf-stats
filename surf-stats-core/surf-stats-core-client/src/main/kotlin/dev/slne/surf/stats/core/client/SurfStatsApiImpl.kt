@@ -1,7 +1,7 @@
 package dev.slne.surf.stats.core.client
 
 import com.google.auto.service.AutoService
-import dev.slne.clan.api.clan.findClanByPlayer
+import dev.slne.surf.player.api.clan.SurfClanApi
 import dev.slne.surf.api.core.util.logger
 import dev.slne.surf.core.api.common.SurfCoreApi
 import dev.slne.surf.stats.api.SurfStatsApi
@@ -82,7 +82,7 @@ class SurfStatsApiImpl : SurfStatsApi {
                 playerUuid = stats.playerUuid,
                 stats = stats,
                 serverName = serverName,
-                clanUuid = stats.playerUuid.findClanByPlayer()?.uuid
+                clanUuid = SurfClanApi.findClanByPlayer(stats.playerUuid)?.uuid
             )
         }
 
@@ -142,7 +142,7 @@ class SurfStatsApiImpl : SurfStatsApi {
                         playerUuid = playerUuid,
                         stats = stats,
                         serverName = SurfCoreApi.getCurrentServerName(),
-                        clanUuid = playerUuid.findClanByPlayer()?.uuid
+                        clanUuid = SurfClanApi.findClanByPlayer(playerUuid)?.uuid
                     )
                 ),
                 type = SaveStatsRequestPacket.Type.DIFFERENCE

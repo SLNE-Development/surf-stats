@@ -18,7 +18,7 @@ A Paper plugin + standalone microservice that captures Minecraft per-player stat
 - Paper 1.21+ (Folia is supported)
 - Java 21+
 - [`surf-rabbitmq-paper`](https://reposilite.slne.dev) — required
-- [`surf-clan-paper`](https://reposilite.slne.dev) — soft dependency (used to attribute diff entries to clans)
+- [`surf-player-paper`](https://reposilite.slne.dev) — soft dependency (used to attribute diff entries to clans)
 - `surf-api-paper` and `surf-core-paper` (transitive)
 
 ### Microservice
