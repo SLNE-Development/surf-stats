@@ -15,7 +15,7 @@ surfMicroservice {
 
 dependencies {
     api(projects.surfStatsCore.surfStatsCoreCommon)
-    compileOnlyApi(libs.surf.clan.api)
+    compileOnlyApi(libs.surf.player.api)
 
     // The `dev.slne.surf.api.gradle.core` convention plugin puts surf-api-core on
     // `compileOnly` only, so it never reaches the test classpath. Tests need it for
